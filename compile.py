@@ -28,5 +28,3 @@ for fileName in SOURCE_FILES:
 shutil.copy2(SCRIPT_PATH+'test.ps1', SCRIPT_PATH+'dist/src/test.ps1')
     
 print 'Done!'
-while True:
-    pass
