@@ -7,23 +7,22 @@ Created on Fri Mar 30 00:35:49 2018
 
 SOURCE_FILES=[
         #Python Files
-        'SaveNLoad.py',
-        'keypress.py',
-        'globalVariables.py',
-        'setup.py',
-        'compile.py',
-        #Powershell Files
-        'test.ps1']
+        'Optimizer.py',
+        'Converter.py',
+		'compile.py',
+		'setup.py'
+		]
 
 AUXILARY_FILES=[
-        'test.ps1']
+        ]
 
 import subprocess
+import sys
 import shutil
 import os
-from globalVariables import SCRIPT_PATH
 
-
+	
+SCRIPT_PATH = ''.join([x+'/' for x in sys.argv[0].split('/')[:-1]])
 
 subprocess.call(['python','setup.py','py2exe'])
 for fileName in AUXILARY_FILES:
