@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-This module provides an API
 Created on Fri Mar 30 00:42:48 2018
+
+This module provides an API to read Save/Load saves and to send them as chat
+messages in-game.
 
 @author: criow
 """
@@ -20,8 +22,9 @@ def SendChatMessage(message,speed):
     Send a chat message in Warcraft III by typing ENTER + MESSAGE + ENTER
     """
     Press('ENTER')
-    Write(message)
+    Write(message,speed)
     Press('ENTER')
+
 def ReadSaveData(saveName,savesPath,number,legacy):
     """
     Reads data from a numbered file .txt in a save direcotry.
@@ -75,7 +78,7 @@ def LoadSave(saveName,savesPath,speed,waitTime,legacy):
     time.sleep(0.5)
     for x in range(0,GetSize(saveName,savesPath)):        
         try:
-            if not TypeSaveData(ReadSaveData(saveName,savesPath,str(x),legacy),savesPath,speed):
+            if not TypeSaveData(ReadSaveData(saveName,savesPath,str(x),legacy),speed):
                 print 'Warcraft III window not in focus. Abort.'
                 return
         except IOError:
@@ -86,6 +89,47 @@ def LoadSave(saveName,savesPath,speed,waitTime,legacy):
 #Keypress Script
 #Special Thanks to Piotr Dabkowski (stackoverflow user) for this script
 #http://stackoverflow.com/questions/14076207/simulating-a-key-press-event-in-python-2-7
+def KeyUp(Key):
+    """Releases a key given an integer."""
+    if GetCurWindowText() != "Warcraft III":
+        return
+    keybd_event(Key, 0, 2, 0)
+
+
+def KeyDown(Key):
+    """Presses down a key given an integer."""
+    if GetCurWindowText() != "Warcraft III":
+        return
+    keybd_event(Key, 0, 1, 0)
+
+
+def Press(Key, speed=1):
+    """Presses down then releases a key given a string"""
+    rest_time = 0.05/speed
+    if Key in Base:
+        Key = Base[Key]
+        KeyDown(Key)
+        time.sleep(rest_time)
+        KeyUp(Key)
+        return True
+    if Key in Combs:
+        KeyDown(Base[Combs[Key][0]])
+        time.sleep(rest_time)
+        KeyDown(Base[Combs[Key][1]])
+        time.sleep(rest_time)
+        KeyUp(Base[Combs[Key][1]])
+        time.sleep(rest_time)
+        KeyUp(Base[Combs[Key][0]])
+        return True
+    return False
+
+
+def Write(Str, speed = 1):
+    """Types a string of letters"""
+    for s in Str:
+        Press(s, speed)
+        time.sleep((0.1 + random.random()/10.0) / float(speed))
+
 Combs = {
     'A': [
         'SHIFT',
@@ -299,41 +343,4 @@ Base = {
     'DOLDOWN': 174,
     'NUMLOCK': 144,
     'SCROLL': 145 }
-
-def KeyUp(Key):
-    if GetCurWindowText() != "Warcraft III":
-        return
-    keybd_event(Key, 0, 2, 0)
-
-
-def KeyDown(Key):
-    if GetCurWindowText() != "Warcraft III":
-        return
-    keybd_event(Key, 0, 1, 0)
-
-
-def Press(Key, speed=1):
-    rest_time = 0.05/speed
-    if Key in Base:
-        Key = Base[Key]
-        KeyDown(Key)
-        time.sleep(rest_time)
-        KeyUp(Key)
-        return True
-    if Key in Combs:
-        KeyDown(Base[Combs[Key][0]])
-        time.sleep(rest_time)
-        KeyDown(Base[Combs[Key][1]])
-        time.sleep(rest_time)
-        KeyUp(Base[Combs[Key][1]])
-        time.sleep(rest_time)
-        KeyUp(Base[Combs[Key][0]])
-        return True
-    return False
-
-
-def Write(Str, speed = 1):
-    for s in Str:
-        Press(s, speed)
-        time.sleep((0.1 + random.random()/10.0) / float(speed))
 #End of borrowed script

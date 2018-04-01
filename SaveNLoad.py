@@ -9,14 +9,19 @@ Created on Thu Oct 20 19:51:07 2016
 
 v2.1.1
 """
+
 # =============================================================================
 # Define version variables
 # =============================================================================
-SCRIPT_VERSION_LIST = [2,1,0]
-SCRIPT_VERSION_DICT = {'MAJOR' : SCRIPT_VERSION_LIST[0], 
-                       'MINOR' : SCRIPT_VERSION_LIST[1], 
-                       'PATCH' : SCRIPT_VERSION_LIST[2]}
-SCRIPT_VERSION =   'v' + ''.join([str(x)+'.' if x != 0 else '' for x in SCRIPT_VERSION_LIST])[:-1]
+class version:
+    major = 2
+    minor = 1
+    patch = 1
+    asList = [major,minor,patch]
+    asDict = {'MAJOR' : major, 
+              'MINOR' : minor, 
+              'PATCH' : patch}
+    asString =   'v' + ''.join([str(x)+'.' if x != 0 else '' for x in asList])[:-1]
 
 # =============================================================================
 # Import Python modules
@@ -30,7 +35,7 @@ import time
 # Import other SaveNLoadModules
 # =============================================================================
 from keypress import LoadSave
-from globalVariables import WC3_PATH,SAVE_PATH,SPEED,WAIT_TIME,SCRIPT_PATH
+from globalVariables import WC3_PATH,SAVE_PATH,SPEED,WAIT_TIME,CHANGE_KEYBD
 
 # =============================================================================
 # Functions
@@ -47,10 +52,70 @@ def ValidateWindowsVersion(validVersions, printMessage = True):
 # =============================================================================
 # Main
 # =============================================================================
+def PollRequest():
+    try:
+        with open(fullPath+'load.txt') as f:
+            saveName = f.read()[69:-43]
+        print 'Load call issued: ' + saveName
+        os.remove(fullPath+'load.txt')
+        return saveName            
+    except Exception as error:
+        if isinstance(error,IOError) and error.errno == 2:
+            return None
+        else:
+            return error
+    
+def Main(saveName):
+    try:
+        with open(fullPath+saveName+'/version.txt') as f:
+            if int(f.read()[69:-43]) <= version.major:
+                LEGACY = False
+            else:
+                print "Incompatible save information. Please update SaveNLoad"
+                return None
+    except Exception as error:
+        if isinstance(error,IOError) and error.errno == 2:
+            LEGACY = True
+            print "Legacy save information detected"
+        else:
+            return error
+    try: 
+        with open(fullPath+saveName+'/size.txt') as f: pass
+    except Exception as error: 
+        if isinstance(error,IOError) and error.errno == 2:
+            print 'Save data not found under requested name'
+            return None
+        else:
+            return error
+    
+    try:
+        if  windowsVersion and CHANGE_KEYBD: #Execute powershell to change keyboard layout
+            print("Attempting to change user's language list...")
+            p = subprocess.Popen(['powershell','-ExecutionPolicy', 'ByPass', '-File', ('ChangeLanguageList.ps1').encode('ascii')],stdin=subprocess.PIPE)
+
+        LoadSave(saveName, fullPath, SPEED, WAIT_TIME, LEGACY)
+
+        print 'Load process finished'
+        #Save file for powershell to read and set user layout back to normal
+        #TODO: Actually do this in a smarter way
+        if windowsVersion and CHANGE_KEYBD:
+            print ("Restoring user's language list...")
+            p.communicate("Anything")
+            if p.returncode:
+                print("Error upon restoring user's language list. Code: "+str(p.returncode))
+            else:
+                print("Sucessfully restored user's language list.")
+    except Exception as error:
+        return error
+    
+    return None
+    
+    
 if __name__ == '__main__':       
     #Print Version
-    print "Save/Load Typing Script",SCRIPT_VERSION
+    print "Save/Load Typing Script", version.asString
     print "By: Guhun"
+    separator = '\n' + "="*10
     
     #Check for Windows 8 or newer
     #TODO: Allow config to disable keyboard setting feature even if user has windows 8+
@@ -65,42 +130,15 @@ if __name__ == '__main__':
         pass
     
     #MAIN LOOP
+    print separator
     while True:
         time.sleep(1)
-        try:
-            with open(fullPath+'load.txt') as f:
-                saveName = f.read()[69:-43]
-            print 'Load call issued: ' + saveName
-            LEGACY = True
-            os.remove(fullPath+'load.txt')            
-        except: 
-            continue
-        try:
-            with open(fullPath+saveName+'/version.txt') as f:
-                if int(f.read()[69:-43]) <= SCRIPT_VERSION['MAJOR']:
-                    LEGACY = False
-                else:
-                    print "Incompatible save information. Please update SaveNLoad"
-                    continue
-        except:
-                LEGACY = True
-                print "Legacy save information detected"
-        try: 
-            with open(fullPath+saveName+'/size.txt') as f: pass
-        except: 
-            print 'Invalid save name'
-            continue
+        requestedSave = PollRequest()
+        if isinstance(requestedSave, Exception): print requestedSave
+        elif not requestedSave: pass
+        else:
+            ERROR = Main(requestedSave)
+            if ERROR: print ERROR
+            print 'Load Process Finished'
+            print separator
         
-        if  windowsVersion: #Execute powershell to change keyboard layout
-            subprocess.Popen(['powershell','-ExecutionPolicy', 'ByPass', '-File', (SCRIPT_PATH + 'test.ps1').encode('ascii')])
-    	 
-        try:
-            LoadSave(saveName, fullPath, SPEED, WAIT_TIME, LEGACY)
-        except Exception as error:
-            print error
-    
-        print 'Load process finished'
-        #Save file for powershell to read and set user layout back to normal
-        #TODO: Actually do this in a smarter way
-        with open(SCRIPT_PATH + "me.txt","w") as f:
-            f.write("0")

@@ -8,4 +8,4 @@ Created on Fri Mar 30 00:34:46 2018
 from distutils.core import setup
 import py2exe
  
-setup(console=['Optimizer.py'])
+setup(console=['SaveNLoad.py']);
