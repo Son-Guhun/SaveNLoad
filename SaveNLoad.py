@@ -7,7 +7,7 @@ Created on Thu Oct 20 19:51:07 2016
 
 @author: SonGuhun
 
-v2.1.1
+v2.2
 """
 
 # =============================================================================
@@ -15,8 +15,8 @@ v2.1.1
 # =============================================================================
 class version:
     major = 2
-    minor = 1
-    patch = 1
+    minor = 2
+    patch = 0
     asList = [major,minor,patch]
     asDict = {'MAJOR' : major, 
               'MINOR' : minor, 
@@ -60,8 +60,15 @@ def PollRequest():
         os.remove(fullPath+'load.txt')
         return saveName            
     except Exception as error:
-        if isinstance(error,IOError) and error.errno == 2:
-            return None
+        if isinstance(error,IOError):
+            if error.errno == 2:
+                return None
+            elif error.errno == 32:
+                print "Warcraft III is still processing the request file."
+                #If this continues, then the program might not have permission to access the file
+                return None
+            else:
+                return error
         else:
             return error
     
@@ -91,11 +98,11 @@ def Main(saveName):
     try:
         if  windowsVersion and CHANGE_KEYBD: #Execute powershell to change keyboard layout
             print("Attempting to change user's language list...")
-            p = subprocess.Popen(['powershell','-ExecutionPolicy', 'ByPass', '-File', ('ChangeLanguageList.ps1').encode('ascii')],stdin=subprocess.PIPE)
-
+            p = subprocess.Popen(['powershell','-ExecutionPolicy', 'ByPass', '-File', ('ChangeLanguageList.ps1').encode('ascii')],stdout=subprocess.PIPE,stdin=subprocess.PIPE)
+            print p.stdout.readline()[:-1]
+            
         LoadSave(saveName, fullPath, SPEED, WAIT_TIME, LEGACY)
 
-        print 'Load process finished'
         #Save file for powershell to read and set user layout back to normal
         #TODO: Actually do this in a smarter way
         if windowsVersion and CHANGE_KEYBD:

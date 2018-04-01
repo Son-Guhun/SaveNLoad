@@ -66,7 +66,6 @@ except IOError:
 try:
     with open(SCRIPT_PATH+'Settings/Typing-Speed.txt') as f:
         SPEED = float(f.read().replace('\n',''))
-        print SPEED
 except:
     SPEED = SetConfigDefault("Typing-Speed")
     
