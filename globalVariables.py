@@ -12,7 +12,6 @@ def SetConfigDefault(config):
 
 
 #Get path for script if it is being run as an executable
-print SCRIPT_PATH
 
 if not os.path.exists("Settings"):
     os.makedirs("Settings")
