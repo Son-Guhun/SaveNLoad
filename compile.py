@@ -16,9 +16,15 @@ a= Compiler(
         'setup.py',
         'compile.py',
         #Powershell Files
-        'ChangeLanguageList.ps1'],
+        'ChangeLanguageList.ps1',
+        #SSL Certification
+        'cacert.pem',
+        #URL Link
+        'Updates.url'],
      [
-        'ChangeLanguageList.ps1']
+        'ChangeLanguageList.ps1',
+        'cacert.pem',
+        'Updates.url']
 )
 a.changeFolderNames('SaveNLoad')
 a.Compile()
