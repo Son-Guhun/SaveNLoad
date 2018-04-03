@@ -9,6 +9,31 @@ Created on Thu Oct 20 19:51:07 2016
 
 v2.2
 """
+# =============================================================================
+# Import Python and 3rd party modules
+# =============================================================================
+import os #Used to delete files
+import time
+import traceback #Error reporting/printing
+import subprocess #Used to execute powershell script
+import platform #Used to retrieve windows version
+
+#Required for sending a GET request for update checks
+from multiprocessing import Process, Manager,freeze_support
+import requests
+
+#Required for signal and exit handling
+import sys
+import win32api
+import atexit
+import signal
+
+# =============================================================================
+# Import other SaveNLoadModules
+# =============================================================================
+from keypress import LoadSave
+from globalVariables import WC3_PATH,SAVE_PATH,SPEED,WAIT_TIME,CHANGE_KEYBD,SCRIPT_PATH
+
 
 # =============================================================================
 # Define version variables
@@ -23,19 +48,129 @@ class version:
               'PATCH' : patch}
     asString =   'v' + ''.join([str(x)+'.' if x != 0 else '' for x in asList])[:-1]
 
-# =============================================================================
-# Import Python modules
-# =============================================================================
-import os
-import platform
-import subprocess
-import time
+
+
+separator = '\n' + "="*10
 
 # =============================================================================
-# Import other SaveNLoadModules
+# Check for updates
 # =============================================================================
-from keypress import LoadSave
-from globalVariables import WC3_PATH,SAVE_PATH,SPEED,WAIT_TIME,CHANGE_KEYBD
+
+def f(d):
+    try:
+        d['value'] = d['a']('https://api.github.com/repos/Son-Guhun/SaveNLoad/releases/latest', verify=d['b']+'cacert.pem')
+    except KeyboardInterrupt:
+        pass
+try:
+    if __name__ == '__main__':
+        freeze_support()
+        manager = Manager()
+    
+        d = manager.dict()
+        d['a'] = requests.get
+        d['b'] = SCRIPT_PATH
+        
+        print "Attemtping to retrieve latest version..."
+        print "...(Press Ctrl+C to cancel)..."
+        p = Process(target=f, args=(d, ))
+        p.start()
+        i=0
+        while p.is_alive() and i<334:
+            p.join(0.03)
+            i+=1
+        
+        if p.is_alive():
+            p.terminate()
+            raise Exception('Connection did not complete within timeout.')
+    
+        check = d['value'].json() 
+        print
+        if check['tag_name'] == version.asString:
+            print 'SaveNLoad is up-to-date.'
+        else:
+            print 'New version is available: Check "Updates" shortcut.'
+except Exception as error:
+    print 'Error finding new version.'
+    traceback.print_exc()
+except  KeyboardInterrupt:
+    print '...Version retrieval interrupted by user.'
+
+
+    
+print separator
+    
+#a =   requests.get('https://api.github.com/repos/Son-Guhun/SaveNLoad/releases/latest', verify=SCRIPT_PATH+'cacert.pem')
+#check = a.json()
+#print check['tag_name']
+
+
+# =============================================================================
+# SIGNAL AND EXIT HANDLING
+# =============================================================================
+processDict = {}
+CREATE_NO_WINDOW = 0x08000000
+def KillPowershell(process):
+    process.communicate('Anything')
+    
+    
+a = True
+def exit_handler2(sigNo,b=None):
+    global a
+    with open(SCRIPT_PATH+'lol.txt','w') as f:
+        f.write(str(sigNo))
+    if sigNo == 2:
+        pass
+        sys.stderr = open(SCRIPT_PATH+'out.txt','w')
+        sys.stdout = open(SCRIPT_PATH+'err.txt','w')
+        exit_handler()
+    else:
+        a = False
+    return 0
+
+def exit_handler():
+    print separator
+    for tup in processDict.values():
+        process = tup[0]
+        func = tup[1][0]
+        args = tup[1][1]
+        kargs = tup[1][2]
+        
+        
+        
+        func(process,*args,**kargs)
+        print 'Waiting for child process to end'
+        for t in xrange(1,10):
+            if process.poll() != None: break
+            time.sleep(1)
+            print '...'+str(t)+' second(s)'
+        if process.poll() != None:
+            print 'Child process sucessfully finished.'
+        else:
+            print 'Child process did not finish, killing it...'
+            process.kill()
+            process.wait()
+        print separator
+    print 'All Child processes have been closed.'
+    processDict.clear()
+    time.sleep(5)
+    
+def PopenWrapper(exitFunc,exitFunc_args,exitFunc_kargs,*args,**kargs):        
+    p = subprocess.Popen(*args,**kargs)
+    processDict[id(p)] = (p,(exitFunc,exitFunc_args,exitFunc_kargs))
+    return p
+   
+    
+print "Employing signal and exit handlers..."
+atexit.register(exit_handler)
+
+#
+for sign in (signal.SIGTERM,signal.SIGABRT,signal.SIGINT,signal.SIGBREAK ):
+    signal.signal(sign,signal.SIG_IGN)
+    
+win32api.SetConsoleCtrlHandler(exit_handler2,1)
+print "...program will now exit gracefully."
+print separator
+
 
 # =============================================================================
 # Functions
@@ -98,7 +233,13 @@ def Main(saveName):
     try:
         if  windowsVersion and CHANGE_KEYBD: #Execute powershell to change keyboard layout
             print("Attempting to change user's language list...")
-            p = subprocess.Popen(['powershell','-ExecutionPolicy', 'ByPass', '-File', ('ChangeLanguageList.ps1').encode('ascii')],stdout=subprocess.PIPE,stdin=subprocess.PIPE)
+            #p = subprocess.Popen(['powershell','-ExecutionPolicy', 'ByPass', '-File', ('ChangeLanguageList.ps1').encode('ascii')],stdout=subprocess.PIPE,stdin=subprocess.PIPE)
+            p = PopenWrapper(KillPowershell,[],{},
+                             ['powershell','-windowstyle','hidden',
+                              '-ExecutionPolicy', 'ByPass', '-File', 
+                              ('ChangeLanguageList.ps1').encode('ascii')],
+                              stdout = subprocess.PIPE, stdin=subprocess.PIPE,
+                              creationflags = CREATE_NO_WINDOW)
             print p.stdout.readline()[:-1]
             
         LoadSave(saveName, fullPath, SPEED, WAIT_TIME, LEGACY)
@@ -108,6 +249,7 @@ def Main(saveName):
         if windowsVersion and CHANGE_KEYBD:
             print ("Restoring user's language list...")
             p.communicate("Anything")
+            del processDict[id(p)]
             if p.returncode:
                 print("Error upon restoring user's language list. Code: "+str(p.returncode))
             else:
@@ -122,7 +264,6 @@ if __name__ == '__main__':
     #Print Version
     print "Save/Load Typing Script", version.asString
     print "By: Guhun"
-    separator = '\n' + "="*10
     
     #Check for Windows 8 or newer
     #TODO: Allow config to disable keyboard setting feature even if user has windows 8+
@@ -137,7 +278,10 @@ if __name__ == '__main__':
         pass
     
     #MAIN LOOP
-    print separator
+    print
+    print 'Executable directory: ' + SCRIPT_PATH
+    print 'Save files directory: ' + fullPath
+    print separator[1:]
     while True:
         time.sleep(1)
         requestedSave = PollRequest()
