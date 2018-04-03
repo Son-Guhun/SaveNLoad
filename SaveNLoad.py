@@ -19,8 +19,8 @@ import subprocess #Used to execute powershell script
 import platform #Used to retrieve windows version
 
 #Required for sending a GET request for update checks
+import updater
 from multiprocessing import Process, Manager,freeze_support
-import requests
 
 #Required for signal and exit handling
 import sys
@@ -49,55 +49,23 @@ class version:
     asString =   'v' + ''.join([str(x)+'.' if x != 0 else '' for x in asList])[:-1]
 
 
+if __name__ == '__main__':
+    freeze_support()
 
-separator = '\n' + "="*10
+    separator = '\n' + "="*10
 
 # =============================================================================
 # Check for updates
 # =============================================================================
-
-def f(d):
-    try:
-        d['value'] = d['a']('https://api.github.com/repos/Son-Guhun/SaveNLoad/releases/latest', verify=d['b']+'cacert.pem')
-    except KeyboardInterrupt:
-        pass
-try:
-    if __name__ == '__main__':
-        freeze_support()
-        manager = Manager()
-    
-        d = manager.dict()
-        d['a'] = requests.get
-        d['b'] = SCRIPT_PATH
-        
-        print "Attemtping to retrieve latest version..."
-        print "...(Press Ctrl+C to cancel)..."
-        p = Process(target=f, args=(d, ))
-        p.start()
-        i=0
-        while p.is_alive() and i<334:
-            p.join(0.03)
-            i+=1
-        
-        if p.is_alive():
-            p.terminate()
-            raise Exception('Connection did not complete within timeout.')
-    
-        check = d['value'].json() 
-        print
-        if check['tag_name'] == version.asString:
+if __name__ == '__main__':
+    newestVersion = updater.getNewestVersion()
+    if newestVersion:
+        if newestVersion == version.asString:
             print 'SaveNLoad is up-to-date.'
         else:
             print 'New version is available: Check "Updates" shortcut.'
-except Exception as error:
-    print 'Error finding new version.'
-    traceback.print_exc()
-except  KeyboardInterrupt:
-    print '...Version retrieval interrupted by user.'
-
-
     
-print separator
+    print separator
     
 #a =   requests.get('https://api.github.com/repos/Son-Guhun/SaveNLoad/releases/latest', verify=SCRIPT_PATH+'cacert.pem')
 #check = a.json()
@@ -282,7 +250,7 @@ if __name__ == '__main__':
     print 'Executable directory: ' + SCRIPT_PATH
     print 'Save files directory: ' + fullPath
     print separator[1:]
-    while True:
+    while a:
         time.sleep(1)
         requestedSave = PollRequest()
         if isinstance(requestedSave, Exception): print requestedSave
