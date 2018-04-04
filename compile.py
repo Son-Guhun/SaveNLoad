@@ -13,6 +13,8 @@ a= Compiler(
         'SaveNLoad.py',
         'keypress.py',
         'globalVariables.py',
+        'updater.py',
+        'handlers.py',
         'setup.py',
         'compile.py',
         #Powershell Files
