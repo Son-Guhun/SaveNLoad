@@ -45,7 +45,8 @@ DEFAULTS = {
 "Save-Directory" : "CustomMapData/DataManager/",
 "Wait-Time" : 5,
 "Typing-Speed" : 5000,
-"Change-Keybd" : True
+"Change-Keybd" : True,
+"Check-for-Updates" : True
 }
 
 try:    
@@ -73,3 +74,9 @@ try:
         CHANGE_KEYBD = True if f.read().replace('\n','') == 'True' else False
 except:
     CHANGE_KEYBD = SetConfigDefault("Change-Keybd")
+
+try:
+    with open(SCRIPT_PATH+'Settings/Check-for-Updates.txt') as f:
+        CHECK_UPDATES = True if f.read().replace('\n','') == 'True' else False
+except:
+    CHECK_UPDATES = SetConfigDefault("Check-for-Updates")
