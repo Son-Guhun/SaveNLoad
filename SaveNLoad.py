@@ -14,38 +14,33 @@ v2.2
 # =============================================================================
 import os #Used to delete files
 import time
-import traceback #Error reporting/printing
+#import traceback #Error reporting/printing
 import subprocess #Used to execute powershell script
 import platform #Used to retrieve windows version
 
 #Required for sending a GET request for update checks
-import updater
-import handlers
 from multiprocessing import freeze_support
-
-
 
 # =============================================================================
 # Import other SaveNLoadModules
 # =============================================================================
 from keypress import LoadSave
 from globalVariables import WC3_PATH,SAVE_PATH,SPEED,WAIT_TIME,CHANGE_KEYBD,SCRIPT_PATH
-
+import updater
+import handlers
 
 # =============================================================================
-# Define version variables
+# Define version class
 # =============================================================================
 class version:
     major = 2
-    minor = 2
+    minor = 3
     patch = 0
     asList = [major,minor,patch]
     asDict = {'MAJOR' : major, 
               'MINOR' : minor, 
               'PATCH' : patch}
     asString =   'v' + ''.join([str(x)+'.' if x != 0 else '' for x in asList])[:-1]
-
-
 
 # =============================================================================
 # Functions
@@ -116,8 +111,7 @@ def Main(saveName):
             
         LoadSave(saveName, fullPath, SPEED, WAIT_TIME, LEGACY)
 
-        #Save file for powershell to read and set user layout back to normal
-        #TODO: Actually do this in a smarter way
+        #Send input to subprocess stdin to reset user language list
         if windowsVersion and CHANGE_KEYBD:
             print ("Restoring user's language list...")
             p.communicate("Anything")
