@@ -20,13 +20,10 @@ import platform #Used to retrieve windows version
 
 #Required for sending a GET request for update checks
 import updater
-from multiprocessing import Process, Manager,freeze_support
+import handlers
+from multiprocessing import freeze_support
 
-#Required for signal and exit handling
-import sys
-import win32api
-import atexit
-import signal
+
 
 # =============================================================================
 # Import other SaveNLoadModules
@@ -49,96 +46,6 @@ class version:
     asString =   'v' + ''.join([str(x)+'.' if x != 0 else '' for x in asList])[:-1]
 
 
-if __name__ == '__main__':
-    freeze_support()
-
-    separator = '\n' + "="*10
-
-# =============================================================================
-# Check for updates
-# =============================================================================
-if __name__ == '__main__':
-    newestVersion = updater.getNewestVersion()
-    if newestVersion:
-        if newestVersion == version.asString:
-            print 'SaveNLoad is up-to-date.'
-        else:
-            print 'New version is available: Check "Updates" shortcut.'
-    
-    print separator
-    
-#a =   requests.get('https://api.github.com/repos/Son-Guhun/SaveNLoad/releases/latest', verify=SCRIPT_PATH+'cacert.pem')
-#check = a.json()
-#print check['tag_name']
-
-
-# =============================================================================
-# SIGNAL AND EXIT HANDLING
-# =============================================================================
-processDict = {}
-CREATE_NO_WINDOW = 0x08000000
-def KillPowershell(process):
-    process.communicate('Anything')
-    
-    
-a = True
-def exit_handler2(sigNo,b=None):
-    global a
-    with open(SCRIPT_PATH+'lol.txt','w') as f:
-        f.write(str(sigNo))
-    if sigNo == 2:
-        pass
-        sys.stderr = open(SCRIPT_PATH+'out.txt','w')
-        sys.stdout = open(SCRIPT_PATH+'err.txt','w')
-        exit_handler()
-    else:
-        a = False
-    return 0
-
-def exit_handler():
-    print separator
-    for tup in processDict.values():
-        process = tup[0]
-        func = tup[1][0]
-        args = tup[1][1]
-        kargs = tup[1][2]
-        
-        
-        
-        func(process,*args,**kargs)
-        print 'Waiting for child process to end'
-        for t in xrange(1,10):
-            if process.poll() != None: break
-            time.sleep(1)
-            print '...'+str(t)+' second(s)'
-        if process.poll() != None:
-            print 'Child process sucessfully finished.'
-        else:
-            print 'Child process did not finish, killing it...'
-            process.kill()
-            process.wait()
-        print separator
-    print 'All Child processes have been closed.'
-    processDict.clear()
-    time.sleep(5)
-    
-def PopenWrapper(exitFunc,exitFunc_args,exitFunc_kargs,*args,**kargs):        
-    p = subprocess.Popen(*args,**kargs)
-    processDict[id(p)] = (p,(exitFunc,exitFunc_args,exitFunc_kargs))
-    return p
-   
-    
-print "Employing signal and exit handlers..."
-atexit.register(exit_handler)
-
-#
-for sign in (signal.SIGTERM,signal.SIGABRT,signal.SIGINT,signal.SIGBREAK ):
-    signal.signal(sign,signal.SIG_IGN)
-    
-win32api.SetConsoleCtrlHandler(exit_handler2,1)
-print "...program will now exit gracefully."
-print separator
-
 
 # =============================================================================
 # Functions
@@ -151,10 +58,7 @@ def ValidateWindowsVersion(validVersions, printMessage = True):
     else:
         if printMessage: print "Windows",version,"Detected - Auto Keyboard Change Unsupported"
         return False
-
-# =============================================================================
-# Main
-# =============================================================================
+    
 def PollRequest():
     try:
         with open(fullPath+'load.txt') as f:
@@ -202,7 +106,7 @@ def Main(saveName):
         if  windowsVersion and CHANGE_KEYBD: #Execute powershell to change keyboard layout
             print("Attempting to change user's language list...")
             #p = subprocess.Popen(['powershell','-ExecutionPolicy', 'ByPass', '-File', ('ChangeLanguageList.ps1').encode('ascii')],stdout=subprocess.PIPE,stdin=subprocess.PIPE)
-            p = PopenWrapper(KillPowershell,[],{},
+            p = handlers.PopenWrapper(handlers.KillPowershell,[],{},
                              ['powershell','-windowstyle','hidden',
                               '-ExecutionPolicy', 'ByPass', '-File', 
                               ('ChangeLanguageList.ps1').encode('ascii')],
@@ -217,7 +121,7 @@ def Main(saveName):
         if windowsVersion and CHANGE_KEYBD:
             print ("Restoring user's language list...")
             p.communicate("Anything")
-            del processDict[id(p)]
+            del handlers.processDict[id(p)]
             if p.returncode:
                 print("Error upon restoring user's language list. Code: "+str(p.returncode))
             else:
@@ -227,8 +131,38 @@ def Main(saveName):
     
     return None
     
+
+# =============================================================================
+# Main
+# =============================================================================
     
-if __name__ == '__main__':       
+if __name__ == '__main__':
+    freeze_support()
+    separator = '\n' + "="*10
+    CREATE_NO_WINDOW = 0x08000000
+
+# =============================================================================
+# ==Check for updates
+# =============================================================================
+    newestVersion = updater.getNewestVersion()
+    if newestVersion:
+        if newestVersion == version.asString:
+            print 'SaveNLoad is up-to-date.'
+        else:
+            print 'New version is available: Check "Updates" shortcut.'
+    
+    print separator
+    
+
+# =============================================================================
+# ==SIGNAL AND EXIT HANDLING
+# =============================================================================
+    handlers.initiateExitHandlers()
+    print separator   
+
+# =============================================================================
+# ==CHECK WINDOWS VERSION AND CLEAR EXISTING REQUESTS
+# =============================================================================
     #Print Version
     print "Save/Load Typing Script", version.asString
     print "By: Guhun"
@@ -245,12 +179,14 @@ if __name__ == '__main__':
     except:
         pass
     
-    #MAIN LOOP
+# =============================================================================
+# ==MAIN LOOP
+# =============================================================================
     print
     print 'Executable directory: ' + SCRIPT_PATH
     print 'Save files directory: ' + fullPath
     print separator[1:]
-    while a:
+    while handlers.a:
         time.sleep(1)
         requestedSave = PollRequest()
         if isinstance(requestedSave, Exception): print requestedSave
@@ -260,4 +196,10 @@ if __name__ == '__main__':
             if ERROR: print ERROR
             print 'Load Process Finished'
             print separator
-        
+  
+# =============================================================================
+#       
+# =============================================================================
+#a =   requests.get('https://api.github.com/repos/Son-Guhun/SaveNLoad/releases/latest', verify=SCRIPT_PATH+'cacert.pem')
+#check = a.json()
+#print check['tag_name']
