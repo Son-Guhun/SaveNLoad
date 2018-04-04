@@ -140,10 +140,14 @@ if __name__ == '__main__':
 # =============================================================================
     newestVersion = updater.getNewestVersion()
     if newestVersion:
+        print
         if newestVersion == version.asString:
             print 'SaveNLoad is up-to-date.'
         else:
             print 'New version is available: Check "Updates" shortcut.'
+            print
+            if raw_input("Would you like to download the newest version now? y/n: ") in ('Y','y'):
+                subprocess.call(['START',SCRIPT_PATH+'Updates.url'], shell=True)
     
     print separator
     
