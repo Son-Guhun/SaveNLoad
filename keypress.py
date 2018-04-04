@@ -13,9 +13,78 @@ from win32api import keybd_event
 import random
 import win32gui
 
+from urllib2 import URLError
+
+from py2exeUtils import ConvertPath
+
+import os
+
+class FileName:
+    def __init__(self,filePath):
+        self.path = filePath
+    
+    def read(self,*args):
+        with open(self.path,'r') as f:
+            content = f.read(*args)
+        return content
+    
+    def readlines(self):
+        with open(self.path,'r') as f:
+            content = f.readlines()
+        return content
+        
+
+class Folder:
+    def __init__(self,folderPath):
+        self.path = ConvertPath(folderPath)
+        if os.path.exists(folderPath):
+            list_ = os.listdir(self.path)
+            self.files ={}
+            for file_ in list_:
+                self.files[file_] = FileName(self.path+file_) 
+        else:
+            self.files = []
+            
+class Save:
+    
+    _TYPES = {'local' : Folder, 'github' : None}
+    
+    def __init__(self,savesPath,saveName):
+        self.name = saveName
+        
+        for saveType in Save._TYPES.keys():
+            if Save._TYPES[saveType]:
+                self.folder = Save._TYPES[saveType](savesPath+saveName)
+                if self.folder.files:
+                    self.type = saveType
+                    break
+        if not self.folder.files:
+            self.folder = None
+            self.type = ''
+                    
+        self.size = 0
+        self.version = 0
+        
+    def getSize(self):
+        try:
+            self.size = int(self.folder.files['size.txt'].read()[69:-43])
+        except (IOError,URLError):
+            self.size = 0
+        return self.size
+    
+    def getVersion(self):
+        try:
+            self.version = int(self.folder.files['version.txt'].read()[69:-43])
+        except Exception as error:
+            if isinstance(error,IOError) and error.errno == 2 or isinstance(error,URLError) and error.errno == 11001:
+                self.version = 1
+            else:
+                self.version = 0
+        return self.version
+
 def GetCurWindowText():
     	return  win32gui.GetWindowText(win32gui.GetForegroundWindow());  
-    
+
 #Functions to Parse WC3 text files
 def SendChatMessage(message,speed):
     """
@@ -25,27 +94,23 @@ def SendChatMessage(message,speed):
     Write(message,speed)
     Press('ENTER')
 
-def ReadSaveData(saveName,savesPath,number,legacy):
+def ReadSaveData(save,number):
     """
-    Reads data from a numbered file .txt in a save direcotry.
+    Reads data from a numbered file .txt in a save directory.
     
     Returns a list with each line of the file, parsed to the format accepted by the in-game save/load.
     """
-    if not legacy: 
-        with open(savesPath+saveName+'/'+number+'.txt') as f:
-            saveData1 = f.readlines()[2:-5]
-            saveData = [ x[16:-4] for x in saveData1]
+    if save.version == 2: 
+        saveData1 = save.folder.files[number+'.txt'].readlines()[2:-5]
+        saveData = [ x[16:-4] for x in saveData1]
     else:
-        with open(savesPath+saveName+'/'+number+'.txt') as f:
-            saveData = f.read()[69:-43]
-            saveData = saveData.split("\\\\n")
+        saveData = save.folder.files[number+'.txt'].f.read()[69:-43]
+        saveData = saveData.split("\\\\n")
     return saveData
 
 def TypeSaveData(saveData,speed):
     """
-    Recieves a list created by ReadSaveData.
-    
-    Sends each line as a chat message in-game.
+    Recieves a list of strings. Sends each string as a chat message in-game.
     
     Returns false if the WC3 window is not in focus while typing.
     Returns true upon successfully finishing the typing routine.
@@ -57,17 +122,7 @@ def TypeSaveData(saveData,speed):
             return False
     return True
 
-def GetSize(saveName,savesPath):
-    """
-    Recieves a the name of a Save as a string.
-    
-    Searches the saves direcotry and returns the size of the Save.
-    """
-    with open(savesPath+saveName+'/size.txt') as f:
-        save_size = f.read()[69:-43]
-    return int(save_size)
-
-def LoadSave(saveName,savesPath,speed,waitTime,legacy):
+def LoadSave(save,speed,waitTime):
     """Recieves the name of a Save as a string.
     
     Retrives the Save's data from the saves directory. Then all the data is typed
@@ -76,13 +131,13 @@ def LoadSave(saveName,savesPath,speed,waitTime,legacy):
     time.sleep(waitTime)
     SendChatMessage('-load ini',speed=speed)
     time.sleep(0.5)
-    for x in range(0,GetSize(saveName,savesPath)):        
+    for x in range(0,save.size):        
         try:
-            if not TypeSaveData(ReadSaveData(saveName,savesPath,str(x),legacy),speed):
+            if not TypeSaveData(ReadSaveData(save,str(x)),speed):
                 print 'Warcraft III window not in focus. Abort.'
                 return
-        except IOError:
-            print "SaveID:", saveName, "file number",x,"could not be read."
+        except (IOError,URLError) :
+            print "SaveID:", save.name, "file number",x,"could not be read."
     time.sleep(0.5)
     SendChatMessage('-load end',speed=speed)
 

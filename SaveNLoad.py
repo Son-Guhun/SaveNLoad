@@ -24,8 +24,8 @@ from multiprocessing import freeze_support
 # =============================================================================
 # Import other SaveNLoadModules
 # =============================================================================
-from keypress import LoadSave
-from globalVariables import WC3_PATH,SAVE_PATH,SPEED,WAIT_TIME,CHANGE_KEYBD,SCRIPT_PATH
+from keypress import LoadSave,Save
+from globalVariables import WC3_PATH,SAVE_PATH,SPEED,WAIT_TIME,CHANGE_KEYBD,SCRIPT_PATH,CHECK_UPDATES
 import updater
 import handlers
 
@@ -75,28 +75,17 @@ def PollRequest():
             return error
     
 def Main(saveName):
-    try:
-        with open(fullPath+saveName+'/version.txt') as f:
-            if int(f.read()[69:-43]) <= version.major:
-                LEGACY = False
-            else:
-                print "Incompatible save information. Please update SaveNLoad"
-                return None
-    except Exception as error:
-        if isinstance(error,IOError) and error.errno == 2:
-            LEGACY = True
-            print "Legacy save information detected"
-        else:
-            return error
-    try: 
-        with open(fullPath+saveName+'/size.txt') as f: pass
-    except Exception as error: 
-        if isinstance(error,IOError) and error.errno == 2:
-            print 'Save data not found under requested name'
-            return None
-        else:
-            return error
+    save = Save(fullPath,saveName)
+    if not save.getSize():
+        return 'Save data not found under requested name'
     
+    if not save.getVersion():
+        return 'Error when retrieving save data'
+    elif save.version < version.major:
+        print "Legacy save information detected"
+    elif save.version > version.major:
+        return "Incompatible save information. Please update SaveNLoad"
+
     try:
         if  windowsVersion and CHANGE_KEYBD: #Execute powershell to change keyboard layout
             print("Attempting to change user's language list...")
@@ -109,7 +98,7 @@ def Main(saveName):
                               creationflags = CREATE_NO_WINDOW)
             print p.stdout.readline()[:-1]
             
-        LoadSave(saveName, fullPath, SPEED, WAIT_TIME, LEGACY)
+        LoadSave(save, SPEED, WAIT_TIME)
 
         #Send input to subprocess stdin to reset user language list
         if windowsVersion and CHANGE_KEYBD:
@@ -138,17 +127,23 @@ if __name__ == '__main__':
 # =============================================================================
 # ==Check for updates
 # =============================================================================
-    newestVersion = updater.getNewestVersion()
-    if newestVersion:
-        print
-        if newestVersion == version.asString:
-            print 'SaveNLoad is up-to-date.'
-        else:
-            print 'New version is available: Check "Updates" shortcut.'
+    if CHECK_UPDATES:
+        newestVersion = updater.getNewestVersion()
+        if newestVersion:
             print
-            if raw_input("Would you like to download the newest version now? y/n: ") in ('Y','y'):
-                subprocess.call(['START',SCRIPT_PATH+'Updates.url'], shell=True)
-    
+            if newestVersion == version.asString:
+                print 'SaveNLoad is up-to-date.'
+            else:
+                print 'New version is available: Check "Updates" shortcut.'
+                print
+                if raw_input("Would you like to download the newest version now? y/n: ") in ('Y','y'):
+                    try:
+                        subprocess.call(['START',SCRIPT_PATH+'Updates.url'], shell=True)
+                    except:
+                        print "Could not find Updates.url file"
+    else:
+        print 'Automatic update checks are disabled.'
+   
     print separator
     
 
@@ -166,7 +161,6 @@ if __name__ == '__main__':
     print "By: Guhun"
     
     #Check for Windows 8 or newer
-    #TODO: Allow config to disable keyboard setting feature even if user has windows 8+
     windowsVersion = ValidateWindowsVersion(('8','10','8.1'))
     fullPath = WC3_PATH+SAVE_PATH
     
