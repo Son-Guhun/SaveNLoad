@@ -24,7 +24,7 @@ from multiprocessing import freeze_support
 # =============================================================================
 # Import other SaveNLoadModules
 # =============================================================================
-from keypress import LoadSave,Save
+from keypress import Save
 from globalVariables import WC3_PATH,SAVE_PATH,SPEED,WAIT_TIME,CHANGE_KEYBD,SCRIPT_PATH,CHECK_UPDATES
 import updater
 import handlers
@@ -102,7 +102,7 @@ def Main(saveName):
                               creationflags = CREATE_NO_WINDOW)
             print p.stdout.readline()[:-1]
             
-        LoadSave(save, SPEED, WAIT_TIME)
+        save.loadData(SPEED, WAIT_TIME)
 
         #Send input to subprocess stdin to reset user language list
         if windowsVersion and CHANGE_KEYBD:
