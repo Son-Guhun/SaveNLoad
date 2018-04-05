@@ -1,9 +1,10 @@
 GITHUB_API = 'https://api.github.com'
 
-GITHUB_USERREPO = '/Son-Guhun/SnL-Cloud-Test'
+#GITHUB_USERREPO = '/Son-Guhun/SnL-Cloud-Test'
 
 '/repos/:owner/:repo/contents/:path'
 
+from globalVariables import GITHUB_USERREPO
 
 #TODO: Create necessary settings
 #TODO: Test the program under conditions where there is no internet connection

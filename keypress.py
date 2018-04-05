@@ -16,6 +16,7 @@ import win32gui
 from urllib2 import URLError
 
 from py2exeUtils import ConvertPath
+from globalVariables import GITHUB_USERREPO
 
 import cloud
 
@@ -52,7 +53,8 @@ class Folder:
             
 class Save:
     
-    _TYPES = {'local' : Folder, 'github' : cloud.GitHubFolder}
+    _TYPES = {'local' : Folder, 
+              'github' : cloud.GitHubFolder if GITHUB_USERREPO else None}
     
     def __init__(self,savesPath,saveName):
         self.name = saveName       
@@ -86,6 +88,38 @@ class Save:
             else:
                 self.version = 0
         return self.version
+    
+    def _readData(self,number):
+        """
+        Reads data from a numbered file .txt in a save directory.
+        
+        Returns a list with each line of the file, parsed to the format accepted by the in-game save/load.
+        """
+        if self.version == 2: 
+            saveData1 = self.folder.files[number+'.txt'].readlines()[2:-5]
+            saveData = [ x[16:-4] for x in saveData1]
+        else:
+            saveData = self.folder.files[number+'.txt'].read()[69:-43]
+            saveData = saveData.split("\\\\n")
+        return saveData
+    
+    def loadData(self,speed,waitTime):
+        """
+        Retrives the Save's data from the saves directory. Then all the data is typed
+        automatically and sent as chat messages to be parsed in-game.
+        """
+        time.sleep(waitTime)
+        SendChatMessage('-load ini',speed=speed)
+        time.sleep(0.5)
+        for x in range(0,self.size):        
+            try:
+                if not TypeSaveData(self._readData(str(x)),speed):
+                    print 'Warcraft III window not in focus. Abort.'
+                    return
+            except (IOError,URLError) :
+                print "SaveID:", self.name, "file number",x,"could not be read."
+        time.sleep(0.5)
+        SendChatMessage('-load end',speed=speed)
 
 def GetCurWindowText():
     	return  win32gui.GetWindowText(win32gui.GetForegroundWindow());  
@@ -98,20 +132,6 @@ def SendChatMessage(message,speed):
     Press('ENTER')
     Write(message,speed)
     Press('ENTER')
-
-def ReadSaveData(save,number):
-    """
-    Reads data from a numbered file .txt in a save directory.
-    
-    Returns a list with each line of the file, parsed to the format accepted by the in-game save/load.
-    """
-    if save.version == 2: 
-        saveData1 = save.folder.files[number+'.txt'].readlines()[2:-5]
-        saveData = [ x[16:-4] for x in saveData1]
-    else:
-        saveData = save.folder.files[number+'.txt'].f.read()[69:-43]
-        saveData = saveData.split("\\\\n")
-    return saveData
 
 def TypeSaveData(saveData,speed):
     """
@@ -126,25 +146,6 @@ def TypeSaveData(saveData,speed):
         else:
             return False
     return True
-
-def LoadSave(save,speed,waitTime):
-    """Recieves the name of a Save as a string.
-    
-    Retrives the Save's data from the saves directory. Then all the data is typed
-    automatically and sent as chat messages to be parsed in-game.
-    """
-    time.sleep(waitTime)
-    SendChatMessage('-load ini',speed=speed)
-    time.sleep(0.5)
-    for x in range(0,save.size):        
-        try:
-            if not TypeSaveData(ReadSaveData(save,str(x)),speed):
-                print 'Warcraft III window not in focus. Abort.'
-                return
-        except (IOError,URLError) :
-            print "SaveID:", save.name, "file number",x,"could not be read."
-    time.sleep(0.5)
-    SendChatMessage('-load end',speed=speed)
 
 #Keypress Script
 #Special Thanks to Piotr Dabkowski (stackoverflow user) for this script
