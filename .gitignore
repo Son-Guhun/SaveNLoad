@@ -4,3 +4,5 @@ Settings
 _Releases
 *.pyc
 Testing.py
+.updateSnL
+.uploadZip

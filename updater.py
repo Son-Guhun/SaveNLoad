@@ -1,18 +1,23 @@
 #Required for sending a GET request for update checks
 from multiprocessing import Process, Manager,freeze_support
 import requests
+import os
 
+from tqdm import tqdm
+import zipfile
 import traceback
 
 from py2exeUtils import scriptDir as SCRIPT_PATH
 
+#['assets'][0]['browser_download_url']
 
 def f(d):
     try:
         d['value'] = d['a']('https://api.github.com/repos/Son-Guhun/SaveNLoad/releases/latest', verify=d['b']+'cacert.pem')
     except KeyboardInterrupt:
         pass
-def getNewestVersion():
+
+def getNewestVersionEx():    
     try:
         if __name__ == '__main__':
             freeze_support()
@@ -41,13 +46,34 @@ def getNewestVersion():
     #            print 'SaveNLoad is up-to-date.'
     #        else:
     #            print 'New version is available: Check "Updates" shortcut.'
-        return check['tag_name']
+        return check
     except Exception as error:
         print 'Error finding new version.'
         traceback.print_exc()
     except  KeyboardInterrupt:
         print '...Version retrieval interrupted by user.'
-    return ''
+    return {}
+
+def getNewestVersion():
+    a = getNewestVersionEx()
+    return a['tag_name'] if a else ''
+    
+
+def extractUpdate():
+    with zipfile.ZipFile(SCRIPT_PATH+'.updateZip/Update.zip','r') as zip_:
+        os.mkdir(SCRIPT_PATH+'.updateSnL')
+        zip_.extractall(SCRIPT_PATH+'.updateSnL')
+
+def downloadNewestVersion():
+    releaseDict = getNewestVersionEx()
+    downloadLink = releaseDict['assets'][0]['browser_download_url']
+    os.mkdir(SCRIPT_PATH+'.updateZip')
+    
+    response = requests.get(downloadLink, stream=True)
+    with open(SCRIPT_PATH+'.updateZip/Update.zip', "wb") as handle:
+        for data in tqdm(response.iter_content()):
+            handle.write(data)
+    
 
 #def f(d):
 #    try:
