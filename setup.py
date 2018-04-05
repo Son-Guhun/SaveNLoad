@@ -11,4 +11,8 @@ import py2exe
 setup(console=['SaveNLoad.py']
           #,options = {'py2exe': {'bundle_files': 1, 'compressed': True}}
           #,zipfile = None
+#          ,options={
+#                      'py2exe':{
+#                              'packages': ['Carbon']}
+#                  }
           );
