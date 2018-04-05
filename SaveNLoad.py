@@ -7,7 +7,7 @@ Created on Thu Oct 20 19:51:07 2016
 
 @author: SonGuhun
 
-v2.2
+v2.3
 """
 # =============================================================================
 # Import Python and 3rd party modules
@@ -76,6 +76,10 @@ def PollRequest():
     
 def Main(saveName):
     save = Save(fullPath,saveName)
+    
+    if not save.type:
+        return 'Could not find specified save folder under any directory'
+    
     if not save.getSize():
         return 'Save data not found under requested name'
     

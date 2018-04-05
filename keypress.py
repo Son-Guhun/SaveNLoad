@@ -17,11 +17,16 @@ from urllib2 import URLError
 
 from py2exeUtils import ConvertPath
 
+import cloud
+
 import os
 
 class FileName:
     def __init__(self,filePath):
-        self.path = filePath
+        if not os.path.isdir(filePath):
+            self.path = filePath
+        else:
+            self.path = ''
     
     def read(self,*args):
         with open(self.path,'r') as f:
@@ -47,14 +52,14 @@ class Folder:
             
 class Save:
     
-    _TYPES = {'local' : Folder, 'github' : None}
+    _TYPES = {'local' : Folder, 'github' : cloud.GitHubFolder}
     
     def __init__(self,savesPath,saveName):
-        self.name = saveName
-        
+        self.name = saveName       
         for saveType in Save._TYPES.keys():
             if Save._TYPES[saveType]:
-                self.folder = Save._TYPES[saveType](savesPath+saveName)
+                self.folder = Save._TYPES[saveType](savesPath+saveName
+                                         if saveType=='local' else saveName)
                 if self.folder.files:
                     self.type = saveType
                     break

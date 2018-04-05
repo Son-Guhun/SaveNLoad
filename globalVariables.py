@@ -1,8 +1,15 @@
 import os
 import ctypes.wintypes
 
+import sys
+print sys.argv
+
+
 from py2exeUtils import ConvertPath
 from py2exeUtils import scriptDir as SCRIPT_PATH
+
+
+print SCRIPT_PATH
 
 def SetConfigDefault(config):
     print config + " configuration file missing. Default will be set."
