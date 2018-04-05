@@ -6,6 +6,9 @@ import shutil
 routineID = raw_input()
 programFolder = raw_input()
 
+# =============================================================================
+# Copy files from the temporary update folder into the original folder
+# =============================================================================
 if routineID == "copy files":
     try:
         while True:
@@ -16,6 +19,9 @@ if routineID == "copy files":
     p = subprocess.Popen(stdin=subprocess.PIPE,stdout=subprocess.PIPE) 
     p.stdin.write("delete temp\n"+
                   programFolder+'\n')
+# =============================================================================
+# After updating the contents of the original folder, delete the temp. one
+# =============================================================================
 elif routineID == "delete temp":
     try:
         while True:
@@ -23,6 +29,7 @@ elif routineID == "delete temp":
     except:
         pass
     shutil.rmtree(programFolder+'.updateSnL')
+    
     
     
     
