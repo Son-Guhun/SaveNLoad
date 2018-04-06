@@ -4,3 +4,4 @@ Settings
 _Releases
 *.pyc
 Testing.py
+.updateZip
