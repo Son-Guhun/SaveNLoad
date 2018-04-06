@@ -3,7 +3,7 @@ from multiprocessing import Process, Manager,freeze_support
 import requests
 import os
 
-from tqdm import tqdm
+from tqdmLite import tqdm
 import zipfile
 import traceback
 
@@ -13,7 +13,6 @@ import py2exeUtils as p2eU
 import subprocess
 #['assets'][0]['browser_download_url']
 
-import types
 def itercontent(self, chunk_size=512, decode_unicode=False):
     return requests.Response.iter_content(self, chunk_size=chunk_size, decode_unicode=decode_unicode)
 
@@ -83,10 +82,13 @@ def downloadNewestVersion():
     makeDirSafe(SCRIPT_PATH+'.updateZip')
     
     response = requests.get(downloadLink, stream=True)
-    #response.iter_content = types.MethodType(itercontent, response)
+    length = int(response.headers['Content-Length'])
+
     with open(SCRIPT_PATH+'.updateZip/Update.zip', "wb") as handle:
-        for data in tqdm(response.iter_content(chunk_size=1024*500)):
+        for data in tqdm(response.iter_content(chunk_size=1024*500),unit='kb',unit_scale=500,total=length/1024./500.):
             handle.write(data)
+            
+    print 'duh'
             
 def autoUpdate():
     
@@ -97,7 +99,7 @@ def autoUpdate():
     downloadNewestVersion()
     extractUpdate()
     
-    subprocess.popen([SCRIPT_PATH+'autoupdate.exe'],
+    p = subprocess.popen([SCRIPT_PATH+'.updateSnL/SaveNLoad/autoupdate.exe'],
                               stdout = subprocess.PIPE, stdin=subprocess.PIPE,
                               creationflags = subprocess.CREATE_NEW_CONSOLE)
     

@@ -240,9 +240,10 @@ class tqdm(object):
         out  : Formatted meter and stats, ready to display.
         """
 
-        # sanity check: total
+        #sanity check: total
         if total and n > total:
-            total = None
+            #total = None
+            n=total #Edited by SonGuhun to fix a bug
 
         # apply custom scale if necessary
         if unit_scale and unit_scale not in (True, 1):
