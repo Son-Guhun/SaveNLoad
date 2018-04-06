@@ -8,8 +8,14 @@ import zipfile
 import traceback
 
 from py2exeUtils import scriptDir as SCRIPT_PATH
+import py2exeUtils as p2eU
 
+import subprocess
 #['assets'][0]['browser_download_url']
+
+import types
+def itercontent(self, chunk_size=512, decode_unicode=False):
+    return requests.Response.iter_content(self, chunk_size=chunk_size, decode_unicode=decode_unicode)
 
 def f(d):
     try:
@@ -58,21 +64,43 @@ def getNewestVersion():
     a = getNewestVersionEx()
     return a['tag_name'] if a else ''
     
+def makeDirSafe(*args,**kargs):
+    try:
+        os.mkdir(*args,**kargs)
+    except WindowsError as error:
+        if error.winerror == 183: pass #Windows error: cannot create an existing file
+        else: raise error 
+    
 
 def extractUpdate():
     with zipfile.ZipFile(SCRIPT_PATH+'.updateZip/Update.zip','r') as zip_:
-        os.mkdir(SCRIPT_PATH+'.updateSnL')
+        makeDirSafe(SCRIPT_PATH+'.updateSnL')
         zip_.extractall(SCRIPT_PATH+'.updateSnL')
 
 def downloadNewestVersion():
     releaseDict = getNewestVersionEx()
     downloadLink = releaseDict['assets'][0]['browser_download_url']
-    os.mkdir(SCRIPT_PATH+'.updateZip')
+    makeDirSafe(SCRIPT_PATH+'.updateZip')
     
     response = requests.get(downloadLink, stream=True)
+    #response.iter_content = types.MethodType(itercontent, response)
     with open(SCRIPT_PATH+'.updateZip/Update.zip', "wb") as handle:
-        for data in tqdm(response.iter_content()):
+        for data in tqdm(response.iter_content(chunk_size=1024*500)):
             handle.write(data)
+            
+def autoUpdate():
+    
+    if not p2eU.frozen:
+        print 'Auto Update is only supported when using the compiled executable.'
+        return False
+    
+    downloadNewestVersion()
+    extractUpdate()
+    
+    subprocess.popen([SCRIPT_PATH+'autoupdate.exe'],
+                              stdout = subprocess.PIPE, stdin=subprocess.PIPE,
+                              creationflags = subprocess.CREATE_NEW_CONSOLE)
+    
     
 
 #def f(d):
