@@ -1,26 +1,46 @@
 GITHUB_API = 'https://api.github.com'
 
-GITHUB_USERREPO = '/Son-Guhun/SaveNLoad'
+#GITHUB_USERREPO = '/Son-Guhun/SnL-Cloud-Test'
 
 '/repos/:owner/:repo/contents/:path'
 
+from globalVariables import GITHUB_USERREPO
+
+#TODO: Create necessary settings
+#TODO: Test the program under conditions where there is no internet connection
+
+import requests
+
+from py2exeUtils import scriptDir as SCRIPT_PATH
+
 class GitHubFile:
     def __init__(self,fileAsDict):
-        self.url = fileAsDict[u'download_url']
+        if fileAsDict[u'type'] == 'file':
+            self.url = fileAsDict[u'download_url']
+        else:
+            self.url = ''
         
     def readlines(self):
         return ReadLinesGitHubFile(self.url)
     
     def read(self,*args):
-        data = urllib2.urlopen(self.url).read(*args)
+        data = convert_line_endings(urllib2.urlopen(self.url).read(*args),0)
         return data
-
+ 
 class GitHubFolder:
     def __init__(self,url):
+        print 
+        print url
         self.url = url
+        self.files = GetGitHubRepositoryContents(0,url)
+        
 
 def GetGitHubRepositoryContents(repository,path=''):
-    contentsList = requests.get(GITHUB_API+'/repos'+GITHUB_USERREPO+'/contents').json()
+    contentsList = requests.get(GITHUB_API+'/repos'+GITHUB_USERREPO+'/contents/'+path, verify=SCRIPT_PATH+'cacert.pem').json()
+    try:
+        if contentsList[u'message'] == u'Not Found':
+            return {}
+    except: pass
     contentsDict = {}
     for entry in contentsList:
         contentsDict[entry[u'name']] = GitHubFile(entry)
@@ -62,23 +82,10 @@ def ReadLinesGitHubFile(fileAsDict):
     
     if not endsInNewline:
         data[-1] = data[-1][:-1]
+    else:
+        del data[-1]
     
     return data
-
-def f(saveName):
-    main = GetGitHubRepositoryContents(0)
     
-    try:
-        savePath = main[saveName][u'path']
-    except KeyError:
-        return None #Repos does not have that folder
-    
-    saveFiles = GetGitHubRepositoryContents(0,savePath)
-    
-    for file_ in saveFiles:
-        saveFiles[file_[u'name']] = file_[u'download_url']
-    
-'https://developer.github.com/v3/repos/contents/'
+#https://developer.github.com/v3/repos/contents/
 #('https://api.github.com/repos/Son-Guhun/SaveNLoad/releases/latest', verify=d['b']+'cacert.pem')
-
-import requests

@@ -7,7 +7,7 @@ Created on Thu Oct 20 19:51:07 2016
 
 @author: SonGuhun
 
-v2.2
+v2.3
 """
 # =============================================================================
 # Import Python and 3rd party modules
@@ -24,7 +24,7 @@ from multiprocessing import freeze_support
 # =============================================================================
 # Import other SaveNLoadModules
 # =============================================================================
-from keypress import LoadSave,Save
+from keypress import Save
 from globalVariables import WC3_PATH,SAVE_PATH,SPEED,WAIT_TIME,CHANGE_KEYBD,SCRIPT_PATH,CHECK_UPDATES
 import updater
 import handlers
@@ -76,6 +76,10 @@ def PollRequest():
     
 def Main(saveName):
     save = Save(fullPath,saveName)
+    
+    if not save.type:
+        return 'Could not find specified save folder under any directory'
+    
     if not save.getSize():
         return 'Save data not found under requested name'
     
@@ -98,7 +102,7 @@ def Main(saveName):
                               creationflags = CREATE_NO_WINDOW)
             print p.stdout.readline()[:-1]
             
-        LoadSave(save, SPEED, WAIT_TIME)
+        save.loadData(SPEED, WAIT_TIME)
 
         #Send input to subprocess stdin to reset user language list
         if windowsVersion and CHANGE_KEYBD:

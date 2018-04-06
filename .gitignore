@@ -5,5 +5,4 @@ _Releases
 *.pyc
 Testing.py
 .updateSnL
-.uploadZip
 .updateZip
