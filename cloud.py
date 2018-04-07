@@ -28,7 +28,11 @@ class GitHubFile:
 class GitHubFolder:
     def __init__(self,url):
         self.url = url
-        self.files = GetGitHubRepositoryContents(0,url)
+        try:
+            self.files = GetGitHubRepositoryContents(0,url)
+        except requests.exceptions.ConnectionError:
+            self.files = {}
+            
     
     def __getitem__(self,file_name):
         return self.files[file_name]

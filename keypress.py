@@ -68,7 +68,7 @@ class Folder:
             for file_ in contents:
                 self.files[file_] = FileName(self.path+file_) 
         else:
-            self.files = []
+            self.files = {}
             
     def __getitem__(self,file_name):
         return self.files[file_name]

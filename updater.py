@@ -3,10 +3,12 @@ from multiprocessing import Process, Manager,freeze_support
 import requests
 import os
 
+
+
 #Required for downloading a new version automatically
 from tqdmLite import tqdm
 import zipfile
-import traceback
+#import traceback
 import subprocess
 
 from py2exeUtils import scriptDir as SCRIPT_PATH
@@ -14,7 +16,7 @@ import py2exeUtils as p2eU
 
 
 ZIP_DOWNLOAD_PATH = SCRIPT_PATH+'.updateSnL/'
-
+req_error = requests.exceptions
 
 # =============================================================================
 # FUNCTIONS THAT USE GITHUB API TO RETRIEVE NEWEST RELEASE
@@ -32,37 +34,28 @@ def getNewestVersionEx():
     
     Returns a dict containing the the json-encoded content of the response.
     """
-    try:
-        if __name__ == '__main__':
-            freeze_support()
-        manager = Manager()
+    if __name__ == '__main__':
+        freeze_support()
+    manager = Manager()
+
+    #Create manager dict to send data to our child process
+    d = manager.dict()
+    d['a'] = requests.get
+    d['b'] = SCRIPT_PATH
     
-        #Create manager dict to send data to our child process
-        d = manager.dict()
-        d['a'] = requests.get
-        d['b'] = SCRIPT_PATH
-        
-        print "Attemtping to retrieve latest version..."
-        print "...(Press Ctrl+C to cancel)..."
-        p = Process(target=f, args=(d, ))
-        p.start()
-        i=0
-        while p.is_alive() and i<334:  #0.03 * 334 ~= 10 seconds
-            p.join(0.03)  # Allow user to press ctrl+C
-            i+=1
-        
-        if p.is_alive():
-            p.terminate()
-            raise Exception('Connection did not complete within timeout.')
+    p = Process(target=f, args=(d, ))
+    p.start()
+    i=0
+    while p.is_alive() and i<334:  #0.03 * 334 ~= 10 seconds
+        p.join(0.03)  # Allow user to press ctrl+C
+        i+=1
     
-        check = d['value'].json() 
-        return check
-    except Exception:
-        print 'Error finding new version.'
-        traceback.print_exc()
-    except  KeyboardInterrupt:
-        print '...Version retrieval interrupted by user.'
-    return {}
+    if p.is_alive():
+        p.terminate()
+        raise req_error.ConnectionError('Connection did not complete within timeout.')
+
+    check = d['value'].json() 
+    return check
 
 def getNewestVersion():
     """

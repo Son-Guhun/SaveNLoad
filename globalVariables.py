@@ -47,7 +47,7 @@ DEFAULTS = {
 "Typing-Speed" : 5000,
 "Change-Keybd" : True,
 "Check-for-Updates" : True,
-"GitHub-Repository" : '/None/',
+"GitHub-Repository" : '/None',
 "Auto-Updates" : True
 }
 

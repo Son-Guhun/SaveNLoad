@@ -14,12 +14,13 @@ v2.3.0
 # =============================================================================
 import os #Used to delete files
 import time
-#import traceback #Error reporting/printing
+import traceback #Error reporting/printing
 import subprocess #Used to execute powershell script
 import platform #Used to retrieve windows version
 
 #Required for sending a GET request for update checks
 from multiprocessing import freeze_support
+from requests import exceptions as req_error
 
 # =============================================================================
 # Import other SaveNLoadModules
@@ -37,7 +38,7 @@ class version:
     major = 2
     minor = 3
     patch = 0
-    suffix = '-test'
+    suffix = '-test2'
     asList = [major,minor,patch]
     asDict = {'MAJOR' : major, 
               'MINOR' : minor, 
@@ -133,25 +134,32 @@ if __name__ == '__main__':
 # =============================================================================
 # ==Check for updates
 # =============================================================================
-    if AUTO_UPDATES:
-        updater.autoUpdate()
-    
-    elif CHECK_UPDATES:
-        newestVersion = updater.getNewestVersion()
-        if newestVersion:
-            print
-            if newestVersion == version.asString:
-                print 'SaveNLoad is up-to-date.'
-            else:
-                print 'New version is available: Check "Updates" shortcut.'
+    try:
+        if CHECK_UPDATES:
+            print "Attemtping to retrieve latest version..."
+            print "...(Press Ctrl+C to cancel)..."
+            newestVersion = updater.getNewestVersion()
+            if newestVersion:
                 print
-                if raw_input("Would you like to download the newest version now? y/n: ") in ('Y','y'):
-                    try:
-                        subprocess.call(['START',SCRIPT_PATH+'Updates.url'], shell=True)
-                    except:
-                        print "Could not find Updates.url file"
-    else:
-        print 'Automatic update checks are disabled.'
+                if newestVersion == version.asString:
+                    print 'SaveNLoad is up-to-date.'
+                else:
+                    if AUTO_UPDATES:
+                        updater.autoUpdate()
+                    else:
+                        print 'New version is available: Check "Updates" shortcut.'
+                        print
+                        if raw_input("Would you like to download the newest version now? y/n: ") in ('Y','y'):
+                            if not subprocess.call(['START',SCRIPT_PATH+'Updates.url'], shell=True):
+                                print "Could not find Updates.url file"
+        else:
+            print 'Automatic update checks are disabled.'
+    except req_error.ConnectionError:
+        print '...Could not connect to the host server.'
+        traceback.print_exc()
+    except  KeyboardInterrupt:
+        print '...Version retrieval interrupted by user.'
+        
    
     print separator
     
