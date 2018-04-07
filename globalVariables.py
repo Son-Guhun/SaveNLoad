@@ -1,15 +1,8 @@
 import os
 import ctypes.wintypes
 
-import sys
-print sys.argv
-
-
 from py2exeUtils import ConvertPath
 from py2exeUtils import scriptDir as SCRIPT_PATH
-
-
-print SCRIPT_PATH
 
 def SetConfigDefault(config):
     print config + " configuration file missing. Default will be set."
@@ -54,7 +47,8 @@ DEFAULTS = {
 "Typing-Speed" : 5000,
 "Change-Keybd" : True,
 "Check-for-Updates" : True,
-"GitHub-Repository" : ''
+"GitHub-Repository" : '/None/',
+"Auto-Updates" : True
 }
 
 try:    
@@ -98,3 +92,12 @@ try:
             GITHUB_USERREPO = GITHUB_USERREPO[:-1]
 except:
     GITHUB_USERREPO = SetConfigDefault("GitHub-Repository")
+    
+try:
+    with open(SCRIPT_PATH+'Settings/Auto-Updates.txt') as f:
+        AUTO_UPDATES = True if f.read().replace('\n','') == 'True' else False
+except:
+    AUTO_UPDATES = SetConfigDefault("Auto-Updates")
+
+if GITHUB_USERREPO == DEFAULTS['GitHub-Repository']:
+    GITHUB_USERREPO = ''

@@ -6,23 +6,25 @@ import shutil
 import sys
 
 
-
 #NOTICE: If you open a console window, the child processes will maintain the original
 #folder where the console was open locked. To avoid this, the original program
 #must be run from a distinct directory
 
 #sys.stderr = open('err.txt','w')
 print sys.argv
-CREATE_NO_WINDOW = 0x00000008 #0x08000000 #subprocess.CREATE_NEW_CONSOLE 
+DETACHED_PROCESS = 0x00000008
 try:
-    routineID = sys.argv[1]
-    programFolder = sys.argv[2]
+    routine_id     = sys.argv[1]
+    program_folder = sys.argv[2]
 except IndexError:
-    routineID = None
-    programFolder = './'
-    pass
+    routine_id     = None
+    program_folder = './'
 
-#if routineID == 'Test1':
+# =============================================================================
+# TESTING ROUTINES
+# =============================================================================
+
+#if routine_id == 'Test1':
 #    try:
 #        raw_input()
 #        while True:
@@ -35,30 +37,30 @@ except IndexError:
 #else:
 #    print sys.argv
 #    raw_input('Start new program')
-#    p = subprocess.Popen([programFolder+'autoupdate.exe','Test1','./'],
+#    p = subprocess.Popen([program_folder+'autoupdate.exe','Test1','./'],
 #                stdout = subprocess.PIPE,
 #                #stdin=subprocess.PIPE,
-#                creationflags = subprocess.CREATE_NEW_CONSOLE)
+#                creationflags = DETACHED_PROCESS)
     
 
 # =============================================================================
 # Copy files from the temporary update folder into the original folder
 # =============================================================================
-if routineID == "copyFiles":
+if routine_id == "copyFiles":
     try:
         raw_input()
 #        while True:
 #            print 'A'
     except:
         pass
-    distutils.dir_util.copy_tree(programFolder+'.updateSnL/SaveNLoad',programFolder)
-    p = subprocess.Popen([programFolder+'autoupdate.exe','deleteTemp',programFolder]
+    distutils.dir_util.copy_tree(program_folder+'.updateSnL/SaveNLoad',program_folder)
+    p = subprocess.Popen([program_folder+'autoupdate.exe','deleteTemp',program_folder]
                               ,stdout = subprocess.PIPE, stdin=subprocess.PIPE,
-                              creationflags = CREATE_NO_WINDOW)
+                              creationflags = DETACHED_PROCESS)
 # =============================================================================
 # After updating the contents of the original folder, delete the temp. one
 # =============================================================================
-elif routineID == "deleteTemp":
+elif routine_id == "deleteTemp":
     import os
     import time
     try:
@@ -68,55 +70,26 @@ elif routineID == "deleteTemp":
     except:
         pass
     i=0
-    while os.path.isdir(programFolder+'.updateSnL') and i < 10:
+    while os.path.isdir(program_folder+'.updateSnL') and i < 10:
         try:
-            shutil.rmtree(programFolder+'.updateSnL',ignore_errors=True)
+            shutil.rmtree(program_folder+'.updateSnL',ignore_errors=True)
         except: pass
         time.sleep(1)
         i+=1
-#    if os.path.isdir(programFolder+'.updateSnL'):
-#        try:
-#            shutil.rmtree(programFolder+'.updateSnL')
-#        except:
-#            p = subprocess.Popen(['START',programFolder+'autoupdate.exe','deleteTemp',programFolder],shell=True)
-        
-    
-    
+
+# =============================================================================
+# Run this routine if the program is directly run from the file explorer
+# This can be used for testing, but warn the user they should know what they
+# are doing.
+# =============================================================================
 else:
     from py2exeUtils import scriptDir,ConvertPath
     print 'This program is not meant to be run as a stand-alone'
-    raw_input('Please press ENTER to exit.')
+    raw_input('Please press ENTER if you know what you are doing.')
 #    distutils.dir_util.copy_tree(ConvertPath(scriptDir,0,2)+'.updateSnL/SaveNLoad',ConvertPath(scriptDir,0,2))
     p = subprocess.Popen([scriptDir+'.updateSnL/SaveNLoad/autoupdate.exe','copyFiles',ConvertPath(scriptDir,0,None)],
                               stdout = subprocess.PIPE, stdin=subprocess.PIPE,
-                              creationflags = CREATE_NO_WINDOW)
+                              creationflags = DETACHED_PROCESS)
     while True:
         print 'A'
     print p.pid()
-    
-    
-    
-#Read from PIPE:
-    #Current SaveNLoad directory's path
-    #Current SaveNLoad directory name
-#Download ZIP file from the interwebs into a new folder in the same place as the SaveNLoad folder
-#Open the executable in the new folder:
-    #Try:
-        #Write to Stdout
-    #Except:
-        #Paren is closed, we can proceed
-    #Copy all files from the new directoy into the old directory
-    #Open copied executable
-        #Try:
-            #Write to Stdout
-        #Except:
-            #Parent is closed, we can proceed
-        #Delete old folder
-    
-#help(distutils.dir_util.copy_tree)
-        
-        
-        #Try:
-            #Remove executable in unzipped folder
-        #Except:
-            #Wait 1 second and try again

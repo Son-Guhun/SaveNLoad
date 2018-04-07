@@ -7,7 +7,7 @@ Created on Thu Oct 20 19:51:07 2016
 
 @author: SonGuhun
 
-v2.3
+v2.3.0
 """
 # =============================================================================
 # Import Python and 3rd party modules
@@ -25,7 +25,8 @@ from multiprocessing import freeze_support
 # Import other SaveNLoadModules
 # =============================================================================
 from keypress import Save
-from globalVariables import WC3_PATH,SAVE_PATH,SPEED,WAIT_TIME,CHANGE_KEYBD,SCRIPT_PATH,CHECK_UPDATES
+from globalVariables import WC3_PATH,SAVE_PATH,SPEED,WAIT_TIME,CHANGE_KEYBD, \
+                            SCRIPT_PATH,CHECK_UPDATES, AUTO_UPDATES
 import updater
 import handlers
 
@@ -36,31 +37,32 @@ class version:
     major = 2
     minor = 3
     patch = 0
+    suffix = '-test'
     asList = [major,minor,patch]
     asDict = {'MAJOR' : major, 
               'MINOR' : minor, 
               'PATCH' : patch}
-    asString =   'v' + ''.join([str(x)+'.' if x != 0 else '' for x in asList])[:-1]
+    asString =   'v' + '.'.join([str(x) for x in asList]) + suffix
 
 # =============================================================================
 # Functions
 # =============================================================================
-def ValidateWindowsVersion(validVersions, printMessage = True):
+def validateWindowsVersion(valid_versions, print_message = True):
     version = platform.win32_ver()[0]
-    if  version in validVersions:
-        if printMessage: print "Windows",version,"Detected"
+    if  version in valid_versions:
+        if print_message: print "Windows",version,"Detected"
         return True
     else:
-        if printMessage: print "Windows",version,"Detected - Auto Keyboard Change Unsupported"
+        if print_message: print "Windows",version,"Detected - Auto Keyboard Change Unsupported"
         return False
     
-def PollRequest():
+def pollRequest():
     try:
-        with open(fullPath+'load.txt') as f:
-            saveName = f.read()[69:-43]
-        print 'Load call issued: ' + saveName
-        os.remove(fullPath+'load.txt')
-        return saveName            
+        with open(PATH_TO_SAVES+'load.txt') as f:
+            save_name = f.read()[69:-43]
+        print 'Load call issued: ' + save_name
+        os.remove(PATH_TO_SAVES+'load.txt')
+        return save_name            
     except Exception as error:
         if isinstance(error,IOError):
             if error.errno == 2:
@@ -73,9 +75,9 @@ def PollRequest():
                 return error
         else:
             return error
-    
-def Main(saveName):
-    save = Save(fullPath,saveName)
+        
+def main(saveName):
+    save = Save(PATH_TO_SAVES,saveName)
     
     if not save.type:
         return 'Could not find specified save folder under any directory'
@@ -91,7 +93,7 @@ def Main(saveName):
         return "Incompatible save information. Please update SaveNLoad"
 
     try:
-        if  windowsVersion and CHANGE_KEYBD: #Execute powershell to change keyboard layout
+        if  WINDOWS_VERSION and CHANGE_KEYBD: #Execute powershell to change keyboard layout
             print("Attempting to change user's language list...")
             #p = subprocess.Popen(['powershell','-ExecutionPolicy', 'ByPass', '-File', ('ChangeLanguageList.ps1').encode('ascii')],stdout=subprocess.PIPE,stdin=subprocess.PIPE)
             p = handlers.PopenWrapper(handlers.KillPowershell,[],{},
@@ -105,7 +107,7 @@ def Main(saveName):
         save.loadData(SPEED, WAIT_TIME)
 
         #Send input to subprocess stdin to reset user language list
-        if windowsVersion and CHANGE_KEYBD:
+        if WINDOWS_VERSION and CHANGE_KEYBD:
             print ("Restoring user's language list...")
             p.communicate("Anything")
             del handlers.processDict[id(p)]
@@ -131,7 +133,10 @@ if __name__ == '__main__':
 # =============================================================================
 # ==Check for updates
 # =============================================================================
-    if CHECK_UPDATES:
+    if AUTO_UPDATES:
+        updater.autoUpdate()
+    
+    elif CHECK_UPDATES:
         newestVersion = updater.getNewestVersion()
         if newestVersion:
             print
@@ -165,12 +170,13 @@ if __name__ == '__main__':
     print "By: Guhun"
     
     #Check for Windows 8 or newer
-    windowsVersion = ValidateWindowsVersion(('8','10','8.1'))
-    fullPath = WC3_PATH+SAVE_PATH
+    WINDOWS_VERSION = validateWindowsVersion(('8','10','8.1'))
+    PATH_TO_SAVES = WC3_PATH+SAVE_PATH
+    
     
     #Clear leftover load requests
     try:
-        os.remove(fullPath+'load.txt')
+        os.remove(PATH_TO_SAVES+'load.txt')
         print 'Unexpected Load Request File. Deleting File'
     except:
         pass
@@ -180,19 +186,19 @@ if __name__ == '__main__':
 # =============================================================================
     print
     print 'Executable directory: ' + SCRIPT_PATH
-    print 'Save files directory: ' + fullPath
+    print 'Save files directory: ' + PATH_TO_SAVES
     print separator[1:]
     while handlers.a:
         time.sleep(1)
-        requestedSave = PollRequest()
-        if isinstance(requestedSave, Exception): print requestedSave
-        elif not requestedSave: pass
+        requested_save = pollRequest()
+        if isinstance(requested_save, Exception): print requested_save
+        elif not requested_save: pass
         else:
-            ERROR = Main(requestedSave)
-            if ERROR: print ERROR
+            exception = main(requested_save)
+            if exception: print exception
             print 'Load Process Finished'
             print separator
-  
+            
 # =============================================================================
 #       
 # =============================================================================

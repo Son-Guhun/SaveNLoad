@@ -2,8 +2,6 @@ GITHUB_API = 'https://api.github.com'
 
 #GITHUB_USERREPO = '/Son-Guhun/SnL-Cloud-Test'
 
-'/repos/:owner/:repo/contents/:path'
-
 from globalVariables import GITHUB_USERREPO
 
 #TODO: Create necessary settings
@@ -29,25 +27,26 @@ class GitHubFile:
  
 class GitHubFolder:
     def __init__(self,url):
-        print 
-        print url
         self.url = url
         self.files = GetGitHubRepositoryContents(0,url)
+    
+    def __getitem__(self,file_name):
+        return self.files[file_name]
         
 
 def GetGitHubRepositoryContents(repository,path=''):
-    contentsList = requests.get(GITHUB_API+'/repos'+GITHUB_USERREPO+'/contents/'+path, verify=SCRIPT_PATH+'cacert.pem').json()
+    contents_list = requests.get(GITHUB_API+'/repos'+GITHUB_USERREPO+'/contents/'+path, verify=SCRIPT_PATH+'cacert.pem').json()
+    print 
+    print 'Searching ' + GITHUB_API+'/repos'+GITHUB_USERREPO+'/contents/'+path
     try:
-        if contentsList[u'message'] == u'Not Found':
+        if contents_list[u'message'] == u'Not Found':
             return {}
     except: pass
-    contentsDict = {}
-    for entry in contentsList:
-        contentsDict[entry[u'name']] = GitHubFile(entry)
-    return contentsDict
+    contents_dict = {}
+    for entry in contents_list:
+        contents_dict[entry[u'name']] = GitHubFile(entry)
+    return contents_dict
 
-def GetFileLink():
-    return 0
 
 import urllib2
 import string
