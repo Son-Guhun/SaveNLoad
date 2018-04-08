@@ -159,6 +159,16 @@ if __name__ == '__main__':
         traceback.print_exc()
     except  KeyboardInterrupt:
         print '...Version retrieval interrupted by user.'
+        try:
+            if AUTO_UPDATES and os.path.exists(updater.ZIP_DOWNLOAD_PATH+'/Update.zip'):
+                os.remove(updater.ZIP_DOWNLOAD_PATH+'/Update.zip')
+                os.rmdir(updater.ZIP_DOWNLOAD_PATH)
+        except WindowsError:
+            traceback.print_exc
+            print
+            print 'Failed to remove temporary update files'
+        
+            
         
    
     print separator
@@ -186,8 +196,11 @@ if __name__ == '__main__':
     try:
         os.remove(PATH_TO_SAVES+'load.txt')
         print 'Unexpected Load Request File. Deleting File'
-    except:
-        pass
+    except WindowsError as error:
+        if error.winerror == 2: #file not found
+            pass
+        else:
+            print 'Unexpected Load Request File was present, but there was an error deleting it.'
     
 # =============================================================================
 # ==MAIN LOOP
