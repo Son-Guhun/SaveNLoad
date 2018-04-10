@@ -10,23 +10,27 @@ import atexit
 separator = '\n' + "="*10
 processDict = {}
 
+
 def KillPowershell(process):
     process.communicate('Anything')
     
     
-a = True
-def exit_handler2(sigNo,b=None):
-    global a
-    with open(SCRIPT_PATH+'lol.txt','w') as f:
-        f.write(str(sigNo))
-    if sigNo == 2:
+CONTINUE_FLAG = True
+
+
+def exit_handler2(sig_num, b=None):
+    global CONTINUE_FLAG
+    # with open(SCRIPT_PATH+'lol.txt', 'w') as f:
+    #     f.write(str(sig_num))
+    if sig_num == 2:
         pass
-        sys.stderr = open(SCRIPT_PATH+'out.txt','w')
-        sys.stdout = open(SCRIPT_PATH+'err.txt','w')
+        # sys.stderr = open(SCRIPT_PATH+'out.txt', 'w')
+        # sys.stdout = open(SCRIPT_PATH+'err.txt', 'w')
         exit_handler()
     else:
-        a = False
+        CONTINUE_FLAG = False
     return 0
+
 
 def exit_handler():
     print separator
@@ -35,16 +39,15 @@ def exit_handler():
         func = tup[1][0]
         args = tup[1][1]
         kargs = tup[1][2]
-        
-        
-        
-        func(process,*args,**kargs)
+
+        func(process, *args, **kargs)
         print 'Waiting for child process to end'
-        for t in xrange(1,10):
-            if process.poll() != None: break
+        for t in xrange(1, 10):
+            if process.poll() is not None:
+                break
             time.sleep(1)
             print '...'+str(t)+' second(s)'
-        if process.poll() != None:
+        if process.poll() is not None:
             print 'Child process sucessfully finished.'
         else:
             print 'Child process did not finish, killing it...'
@@ -54,20 +57,21 @@ def exit_handler():
     print 'All Child processes have been closed.'
     processDict.clear()
     time.sleep(5)
-    
-def PopenWrapper(exitFunc,exitFunc_args,exitFunc_kargs,*args,**kargs):        
-    p = subprocess.Popen(*args,**kargs)
-    processDict[id(p)] = (p,(exitFunc,exitFunc_args,exitFunc_kargs))
+
+
+def PopenWrapper(exit_func, exit_func_args, exit_func_kwargs, *args, **kwargs):
+    p = subprocess.Popen(*args, **kwargs)
+    processDict[id(p)] = (p, (exit_func, exit_func_args, exit_func_kwargs))
     return p
-   
+
+
 def initiateExitHandlers():
     print "Employing signal and exit handlers..."
     atexit.register(exit_handler)
-    
     #
-    for sign in (signal.SIGTERM,signal.SIGABRT,signal.SIGINT,signal.SIGBREAK ):
-        signal.signal(sign,signal.SIG_IGN)
+    for sign in (signal.SIGTERM, signal.SIGABRT, signal.SIGINT, signal.SIGBREAK):
+        signal.signal(sign, signal.SIG_IGN)
         
-    win32api.SetConsoleCtrlHandler(exit_handler2,1)
+    win32api.SetConsoleCtrlHandler(exit_handler2, 1)
     print "...program will now exit gracefully."
     print separator

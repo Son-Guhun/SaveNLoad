@@ -5,56 +5,103 @@ Created on Fri Mar 30 00:42:48 2018
 This module provides an API to read Save/Load saves and to send them as chat
 messages in-game.
 
-@author: criow
+@author: SonGuhun
 """
-
+# =============================================================================
+# 3rd party modules
+# =============================================================================
 import time
 from win32api import keybd_event
 import random
+# noinspection PyPackageRequirements
 import win32gui
-
+import os
 from urllib2 import URLError
-
 from py2exeUtils import ConvertPath
 
-import os
+# =============================================================================
+# SaveNLoad modules
+# =============================================================================
+from globalVariables import GITHUB_USERREPO
+import cloud
 
+
+# =============================================================================
+# File-like and Save classes
+# =============================================================================
 class FileName:
-    def __init__(self,filePath):
-        self.path = filePath
+    """
+    A file-like object that supports reading from local files.
     
-    def read(self,*args):
-        with open(self.path,'r') as f:
+    Stores a file name as a string, and the read/readlines methods work by
+    opening the file, using the respective File class method and closing the
+    file.
+    """
+    def __init__(self, file_path):
+        if not os.path.isdir(file_path):
+            self.path = file_path
+        else:
+            self.path = ''
+    
+    def read(self, *args):
+        with open(self.path, 'r') as f:
             content = f.read(*args)
         return content
     
-    def readlines(self):
-        with open(self.path,'r') as f:
-            content = f.readlines()
+    def readlines(self, *args):
+        with open(self.path, 'r') as f:
+            content = f.readlines(*args)
         return content
-        
+
 
 class Folder:
-    def __init__(self,folderPath):
-        self.path = ConvertPath(folderPath)
-        if os.path.exists(folderPath):
-            list_ = os.listdir(self.path)
-            self.files ={}
-            for file_ in list_:
+    """
+    A folder-like object that stores the contents of a local directory as a dict
+    of FileName instances.
+    
+    Any folders
+    """
+    def __init__(self, folder_path):
+        self.path = ConvertPath(folder_path)
+        if os.path.exists(folder_path):
+            contents = os.listdir(self.path)
+            self.files = {}
+            for file_ in contents:
                 self.files[file_] = FileName(self.path+file_) 
         else:
-            self.files = []
+            self.files = {}
             
+    def __getitem__(self, file_name):
+        return self.files[file_name]
+
+
 class Save:
+    """
+    A class that represents a save folder. It supports opening folders using
+    any of the folder-like classes, like Folder and GitHubFolder created for
+    SaveNLoad.
     
-    _TYPES = {'local' : Folder, 'github' : None}
-    
-    def __init__(self,savesPath,saveName):
-        self.name = saveName
+    Member fields:
+        name    : The name of the Save's folder in a saves directory
+        folder  : A folder-like object representing the Save's folder
+        type    : The type of the Save (how it is stored)
+        size    : The number of numbered .txt files in the Save's folder
+        version : The major version number with which the Save was made in wc3.
         
-        for saveType in Save._TYPES.keys():
+    The 'version' and 'size' members are initialized as 0. To retrieve the
+    actual size and version number of the 
+    """
+    
+    _TYPES_ORDERED = ['local', 'github']
+    _TYPES = {'local': Folder,
+              'github': cloud.GitHubFolder if GITHUB_USERREPO else None}
+    
+    def __init__(self, saves_path, save_name):
+        self.name = save_name
+        for saveType in Save._TYPES_ORDERED:
             if Save._TYPES[saveType]:
-                self.folder = Save._TYPES[saveType](savesPath+saveName)
+                self.folder = Save._TYPES[saveType](saves_path+save_name
+                                                    if saveType == 'local' else save_name)
                 if self.folder.files:
                     self.type = saveType
                     break
@@ -65,125 +112,149 @@ class Save:
         self.size = 0
         self.version = 0
         
+    def __getitem__(self, file_name):
+        return self.folder[file_name]
+        
     def getSize(self):
+        """
+        Reads 'size.txt' inside a save folder to retrieve its size. Once the size
+        has been retrieved, it is stored in the 'size' member field.
+        """
         try:
-            self.size = int(self.folder.files['size.txt'].read()[69:-43])
-        except (IOError,URLError):
+            self.size = int(self['size.txt'].read()[69:-43])
+        except (IOError, URLError):
             self.size = 0
         return self.size
     
     def getVersion(self):
+        """
+        Reads 'version.txt' inside a save folder to retrieve its size. Once it
+        has been retrieved, the version number is stored in the 'version' 
+        member field. 
+        
+        If no 'version.txt' file is found, the Save is considered a version 1 
+        Save.
+        """
         try:
-            self.version = int(self.folder.files['version.txt'].read()[69:-43])
+            self.version = int(self['version.txt'].read()[69:-43])
         except Exception as error:
             if isinstance(error,IOError) and error.errno == 2 or isinstance(error,URLError) and error.errno == 11001:
                 self.version = 1
             else:
                 self.version = 0
         return self.version
+    
+    def _readData(self, number):
+        """
+        Reads data from a numbered file .txt in a save directory.
+        
+        Returns a list with each line of the file, parsed to the format accepted by the in-game save/load.
+        """
+        if self.version == 2: 
+            save_data = self[number+'.txt'].readlines()[2:-5]
+            save_data = [x[16:-4] for x in save_data]
+        else:
+            save_data = self[number+'.txt'].read()[69:-43]
+            save_data = save_data.split("\\\\n")
+        return save_data
+    
+    def loadData(self, speed, wait_time):
+        """
+        Retrives the Save's data from the saves directory. Then all the data is typed
+        automatically and sent as chat messages to be parsed in-game.
+        """
+        time.sleep(wait_time)
+        sendChatMessage('-load ini', speed=speed)
+        time.sleep(0.5)
+        for x in range(0, self.size):
+            try:
+                if not typeSaveData(self._readData(str(x)), speed):
+                    print 'Warcraft III window not in focus. Abort.'
+                    return
+            except (IOError, URLError):
+                print "SaveID:", self.name, "file number", x, "could not be read."
+        time.sleep(0.5)
+        sendChatMessage('-load end', speed=speed)
 
-def GetCurWindowText():
-    	return  win32gui.GetWindowText(win32gui.GetForegroundWindow());  
 
-#Functions to Parse WC3 text files
-def SendChatMessage(message,speed):
+# =============================================================================
+# Functions
+# =============================================================================
+def getCurWindowText():
+    return win32gui.GetWindowText(win32gui.GetForegroundWindow())
+
+
+# Functions to Parse WC3 text files
+def sendChatMessage(message, speed):
     """
     Send a chat message in Warcraft III by typing ENTER + MESSAGE + ENTER
     """
-    Press('ENTER')
-    Write(message,speed)
-    Press('ENTER')
+    press('ENTER')
+    write(message, speed)
+    press('ENTER')
 
-def ReadSaveData(save,number):
-    """
-    Reads data from a numbered file .txt in a save directory.
-    
-    Returns a list with each line of the file, parsed to the format accepted by the in-game save/load.
-    """
-    if save.version == 2: 
-        saveData1 = save.folder.files[number+'.txt'].readlines()[2:-5]
-        saveData = [ x[16:-4] for x in saveData1]
-    else:
-        saveData = save.folder.files[number+'.txt'].f.read()[69:-43]
-        saveData = saveData.split("\\\\n")
-    return saveData
 
-def TypeSaveData(saveData,speed):
+def typeSaveData(save_data, speed):
     """
     Recieves a list of strings. Sends each string as a chat message in-game.
     
     Returns false if the WC3 window is not in focus while typing.
     Returns true upon successfully finishing the typing routine.
     """
-    for unitData in saveData:
-        if GetCurWindowText() == "Warcraft III":
-            SendChatMessage(unitData,speed=speed)
+    for line_data in save_data:
+        if getCurWindowText() == "Warcraft III":
+            sendChatMessage(line_data, speed=speed)
         else:
             return False
     return True
 
-def LoadSave(save,speed,waitTime):
-    """Recieves the name of a Save as a string.
-    
-    Retrives the Save's data from the saves directory. Then all the data is typed
-    automatically and sent as chat messages to be parsed in-game.
-    """
-    time.sleep(waitTime)
-    SendChatMessage('-load ini',speed=speed)
-    time.sleep(0.5)
-    for x in range(0,save.size):        
-        try:
-            if not TypeSaveData(ReadSaveData(save,str(x)),speed):
-                print 'Warcraft III window not in focus. Abort.'
-                return
-        except (IOError,URLError) :
-            print "SaveID:", save.name, "file number",x,"could not be read."
-    time.sleep(0.5)
-    SendChatMessage('-load end',speed=speed)
 
-#Keypress Script
-#Special Thanks to Piotr Dabkowski (stackoverflow user) for this script
-#http://stackoverflow.com/questions/14076207/simulating-a-key-press-event-in-python-2-7
-def KeyUp(Key):
+# =============================================================================
+# Keypress Script
+# Special Thanks to Piotr Dabkowski (stackoverflow user) for this script
+# http://stackoverflow.com/questions/14076207/simulating-a-key-press-event-in-python-2-7
+# =============================================================================
+def keyUp(key):
     """Releases a key given an integer."""
-    if GetCurWindowText() != "Warcraft III":
+    if getCurWindowText() != "Warcraft III":
         return
-    keybd_event(Key, 0, 2, 0)
+    keybd_event(key, 0, 2, 0)
 
 
-def KeyDown(Key):
+def keyDown(key):
     """Presses down a key given an integer."""
-    if GetCurWindowText() != "Warcraft III":
+    if getCurWindowText() != "Warcraft III":
         return
-    keybd_event(Key, 0, 1, 0)
+    keybd_event(key, 0, 1, 0)
 
 
-def Press(Key, speed=1):
+def press(key, speed=1):
     """Presses down then releases a key given a string"""
     rest_time = 0.05/speed
-    if Key in Base:
-        Key = Base[Key]
-        KeyDown(Key)
+    if key in Base:
+        key = Base[key]
+        keyDown(key)
         time.sleep(rest_time)
-        KeyUp(Key)
+        keyUp(key)
         return True
-    if Key in Combs:
-        KeyDown(Base[Combs[Key][0]])
+    if key in Combs:
+        keyDown(Base[Combs[key][0]])
         time.sleep(rest_time)
-        KeyDown(Base[Combs[Key][1]])
+        keyDown(Base[Combs[key][1]])
         time.sleep(rest_time)
-        KeyUp(Base[Combs[Key][1]])
+        keyUp(Base[Combs[key][1]])
         time.sleep(rest_time)
-        KeyUp(Base[Combs[Key][0]])
+        keyUp(Base[Combs[key][0]])
         return True
     return False
 
 
-def Write(Str, speed = 1):
+def write(string, speed=1):
     """Types a string of letters"""
-    for s in Str:
-        Press(s, speed)
+    for s in string:
+        press(s, speed)
         time.sleep((0.1 + random.random()/10.0) / float(speed))
+
 
 Combs = {
     'A': [
@@ -323,7 +394,7 @@ Combs = {
         '9'],
     ')': [
         'SHIFT',
-        '0'] }
+        '0']}
 Base = {
     '0': 48,
     '1': 49,
@@ -397,5 +468,5 @@ Base = {
     'VOLUP': 175,
     'DOLDOWN': 174,
     'NUMLOCK': 144,
-    'SCROLL': 145 }
-#End of borrowed script
+    'SCROLL': 145}
+# End of borrowed script

@@ -9,7 +9,7 @@ from py2exeUtils import Compiler
 
 a= Compiler(
     [
-        #Python Files
+        # Python Files
         'SaveNLoad.py',
         'keypress.py',
         'globalVariables.py',
@@ -17,11 +17,19 @@ a= Compiler(
         'handlers.py',
         'setup.py',
         'compile.py',
-        #Powershell Files
+        # tqdmLite
+        'tqdmLite/__init__.py',
+        'tqdmLite/__main__.py',
+        'tqdmLite/_main.py',
+        'tqdmLite/_monitor.py',
+        'tqdmLite/_tqdm.py',
+        'tqdmLite/_utils.py',
+        'tqdmLite/_version.py',
+        # Powershell Files
         'ChangeLanguageList.ps1',
-        #SSL Certification
+        # SSL Certification
         'cacert.pem',
-        #URL Link
+        # URL Link
         'Updates.url'],
      [
         'ChangeLanguageList.ps1',
