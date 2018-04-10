@@ -17,6 +17,14 @@ a= Compiler(
         'handlers.py',
         'setup.py',
         'compile.py',
+        #
+        'tqdmLite/__init__.py',
+        'tqdmLite/__main__.py',
+        'tqdmLite/_main.py',
+        'tqdmLite/_monitor.py',
+        'tqdmLite/_tqdm.py',
+        'tqdmLite/_utils.py',
+        'tqdmLite/_version.py',
         #Powershell Files
         'ChangeLanguageList.ps1',
         #SSL Certification
