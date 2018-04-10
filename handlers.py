@@ -20,12 +20,12 @@ CONTINUE_FLAG = True
 
 def exit_handler2(sig_num, b=None):
     global CONTINUE_FLAG
-    with open(SCRIPT_PATH+'lol.txt', 'w') as f:
-        f.write(str(sig_num))
+    # with open(SCRIPT_PATH+'lol.txt', 'w') as f:
+    #     f.write(str(sig_num))
     if sig_num == 2:
         pass
-        sys.stderr = open(SCRIPT_PATH+'out.txt', 'w')
-        sys.stdout = open(SCRIPT_PATH+'err.txt', 'w')
+        # sys.stderr = open(SCRIPT_PATH+'out.txt', 'w')
+        # sys.stdout = open(SCRIPT_PATH+'err.txt', 'w')
         exit_handler()
     else:
         CONTINUE_FLAG = False

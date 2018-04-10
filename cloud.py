@@ -45,7 +45,7 @@ def GetGitHubRepositoryContents(repository=GITHUB_USERREPO, path=''):
     try:
         if contents_list[u'message'] == u'Not Found':
             return {}
-    except KeyError:
+    except TypeError:  # Response should be a list, not a dict like for not-found messages
         pass
     contents_dict = {}
     for entry in contents_list:

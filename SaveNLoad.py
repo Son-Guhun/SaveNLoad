@@ -40,7 +40,7 @@ class version:
     major = 2
     minor = 3
     patch = 0
-    suffix = '-test2'
+    suffix = ''
     asList = [major, minor, patch]
     asDict = {'MAJOR': major,
               'MINOR': minor,
