@@ -5,7 +5,7 @@ Created on Fri Mar 30 00:42:48 2018
 This module provides an API to read Save/Load saves and to send them as chat
 messages in-game.
 
-@author: criow
+@author: SonGuhun
 """
 # =============================================================================
 # 3rd party modules
@@ -13,6 +13,7 @@ messages in-game.
 import time
 from win32api import keybd_event
 import random
+# noinspection PyPackageRequirements
 import win32gui
 import os
 from urllib2 import URLError
@@ -36,19 +37,19 @@ class FileName:
     opening the file, using the respective File class method and closing the
     file.
     """
-    def __init__(self,file_path):
+    def __init__(self, file_path):
         if not os.path.isdir(file_path):
             self.path = file_path
         else:
             self.path = ''
     
-    def read(self,*args):
-        with open(self.path,'r') as f:
+    def read(self, *args):
+        with open(self.path, 'r') as f:
             content = f.read(*args)
         return content
     
-    def readlines(self,*args):
-        with open(self.path,'r') as f:
+    def readlines(self, *args):
+        with open(self.path, 'r') as f:
             content = f.readlines(*args)
         return content
 
@@ -60,19 +61,20 @@ class Folder:
     
     Any folders
     """
-    def __init__(self,folderPath):
-        self.path = ConvertPath(folderPath)
-        if os.path.exists(folderPath):
+    def __init__(self, folder_path):
+        self.path = ConvertPath(folder_path)
+        if os.path.exists(folder_path):
             contents = os.listdir(self.path)
-            self.files ={}
+            self.files = {}
             for file_ in contents:
                 self.files[file_] = FileName(self.path+file_) 
         else:
             self.files = {}
             
-    def __getitem__(self,file_name):
+    def __getitem__(self, file_name):
         return self.files[file_name]
-            
+
+
 class Save:
     """
     A class that represents a save folder. It supports opening folders using
@@ -91,15 +93,15 @@ class Save:
     """
     
     _TYPES_ORDERED = ['local', 'github']
-    _TYPES = {'local' : Folder, 
-              'github' : cloud.GitHubFolder if GITHUB_USERREPO else None}
+    _TYPES = {'local': Folder,
+              'github': cloud.GitHubFolder if GITHUB_USERREPO else None}
     
-    def __init__(self,savesPath,saveName):
-        self.name = saveName       
+    def __init__(self, saves_path, save_name):
+        self.name = save_name
         for saveType in Save._TYPES_ORDERED:
             if Save._TYPES[saveType]:
-                self.folder = Save._TYPES[saveType](savesPath+saveName
-                                         if saveType=='local' else saveName)
+                self.folder = Save._TYPES[saveType](saves_path+save_name
+                                                    if saveType == 'local' else save_name)
                 if self.folder.files:
                     self.type = saveType
                     break
@@ -110,7 +112,7 @@ class Save:
         self.size = 0
         self.version = 0
         
-    def __getitem__(self,file_name):
+    def __getitem__(self, file_name):
         return self.folder[file_name]
         
     def getSize(self):
@@ -120,7 +122,7 @@ class Save:
         """
         try:
             self.size = int(self['size.txt'].read()[69:-43])
-        except (IOError,URLError):
+        except (IOError, URLError):
             self.size = 0
         return self.size
     
@@ -142,7 +144,7 @@ class Save:
                 self.version = 0
         return self.version
     
-    def _readData(self,number):
+    def _readData(self, number):
         """
         Reads data from a numbered file .txt in a save directory.
         
@@ -150,59 +152,62 @@ class Save:
         """
         if self.version == 2: 
             save_data = self[number+'.txt'].readlines()[2:-5]
-            save_data = [ x[16:-4] for x in save_data]
+            save_data = [x[16:-4] for x in save_data]
         else:
             save_data = self[number+'.txt'].read()[69:-43]
             save_data = save_data.split("\\\\n")
         return save_data
     
-    def loadData(self,speed,waitTime):
+    def loadData(self, speed, wait_time):
         """
         Retrives the Save's data from the saves directory. Then all the data is typed
         automatically and sent as chat messages to be parsed in-game.
         """
-        time.sleep(waitTime)
-        sendChatMessage('-load ini',speed=speed)
+        time.sleep(wait_time)
+        sendChatMessage('-load ini', speed=speed)
         time.sleep(0.5)
-        for x in range(0,self.size):        
+        for x in range(0, self.size):
             try:
-                if not typeSaveData(self._readData(str(x)),speed):
+                if not typeSaveData(self._readData(str(x)), speed):
                     print 'Warcraft III window not in focus. Abort.'
                     return
-            except (IOError,URLError) :
-                print "SaveID:", self.name, "file number",x,"could not be read."
+            except (IOError, URLError):
+                print "SaveID:", self.name, "file number", x, "could not be read."
         time.sleep(0.5)
-        sendChatMessage('-load end',speed=speed)
+        sendChatMessage('-load end', speed=speed)
 
 
 # =============================================================================
 # Functions
 # =============================================================================
 def getCurWindowText():
-    	return  win32gui.GetWindowText(win32gui.GetForegroundWindow());  
+    return win32gui.GetWindowText(win32gui.GetForegroundWindow())
 
-#Functions to Parse WC3 text files
-def sendChatMessage(message,speed):
+
+# Functions to Parse WC3 text files
+def sendChatMessage(message, speed):
     """
     Send a chat message in Warcraft III by typing ENTER + MESSAGE + ENTER
     """
     press('ENTER')
-    write(message,speed)
+    write(message, speed)
     press('ENTER')
 
-def typeSaveData(saveData,speed):
+
+def typeSaveData(save_data, speed):
     """
     Recieves a list of strings. Sends each string as a chat message in-game.
     
     Returns false if the WC3 window is not in focus while typing.
     Returns true upon successfully finishing the typing routine.
     """
-    for unitData in saveData:
+    for line_data in save_data:
         if getCurWindowText() == "Warcraft III":
-            sendChatMessage(unitData,speed=speed)
+            sendChatMessage(line_data, speed=speed)
         else:
             return False
     return True
+
 
 # =============================================================================
 # Keypress Script
@@ -223,32 +228,33 @@ def keyDown(key):
     keybd_event(key, 0, 1, 0)
 
 
-def press(Key, speed=1):
+def press(key, speed=1):
     """Presses down then releases a key given a string"""
     rest_time = 0.05/speed
-    if Key in Base:
-        Key = Base[Key]
-        keyDown(Key)
+    if key in Base:
+        key = Base[key]
+        keyDown(key)
         time.sleep(rest_time)
-        keyUp(Key)
+        keyUp(key)
         return True
-    if Key in Combs:
-        keyDown(Base[Combs[Key][0]])
+    if key in Combs:
+        keyDown(Base[Combs[key][0]])
         time.sleep(rest_time)
-        keyDown(Base[Combs[Key][1]])
+        keyDown(Base[Combs[key][1]])
         time.sleep(rest_time)
-        keyUp(Base[Combs[Key][1]])
+        keyUp(Base[Combs[key][1]])
         time.sleep(rest_time)
-        keyUp(Base[Combs[Key][0]])
+        keyUp(Base[Combs[key][0]])
         return True
     return False
 
 
-def write(Str, speed = 1):
+def write(string, speed=1):
     """Types a string of letters"""
-    for s in Str:
+    for s in string:
         press(s, speed)
         time.sleep((0.1 + random.random()/10.0) / float(speed))
+
 
 Combs = {
     'A': [
@@ -388,7 +394,7 @@ Combs = {
         '9'],
     ')': [
         'SHIFT',
-        '0'] }
+        '0']}
 Base = {
     '0': 48,
     '1': 49,
@@ -462,5 +468,5 @@ Base = {
     'VOLUP': 175,
     'DOLDOWN': 174,
     'NUMLOCK': 144,
-    'SCROLL': 145 }
-#End of borrowed script
+    'SCROLL': 145}
+# End of borrowed script
