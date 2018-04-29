@@ -39,7 +39,7 @@ import handlers
 class version:
     major = 2
     minor = 3
-    patch = 0
+    patch = 1
     suffix = ''
     asList = [major, minor, patch]
     asDict = {'MAJOR': major,

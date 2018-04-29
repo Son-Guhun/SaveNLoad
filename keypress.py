@@ -18,6 +18,7 @@ import win32gui
 import os
 from urllib2 import URLError
 from py2exeUtils import ConvertPath
+import traceback
 
 # =============================================================================
 # SaveNLoad modules
@@ -123,6 +124,7 @@ class Save:
         try:
             self.size = int(self['size.txt'].read()[69:-43])
         except (IOError, URLError):
+            traceback.print_exc()
             self.size = 0
         return self.size
     
@@ -138,9 +140,10 @@ class Save:
         try:
             self.version = int(self['version.txt'].read()[69:-43])
         except Exception as error:
-            if isinstance(error,IOError) and error.errno == 2 or isinstance(error,URLError) and error.errno == 11001:
+            if isinstance(error,KeyError):
                 self.version = 1
             else:
+                traceback.print_exc()
                 self.version = 0
         return self.version
     
@@ -172,6 +175,7 @@ class Save:
                     print 'Warcraft III window not in focus. Abort.'
                     return
             except (IOError, URLError):
+                traceback.print_exc()
                 print "SaveID:", self.name, "file number", x, "could not be read."
         time.sleep(0.5)
         sendChatMessage('-load end', speed=speed)
