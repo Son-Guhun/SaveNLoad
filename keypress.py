@@ -40,6 +40,8 @@ class FileName:
     """
     def __init__(self, file_path):
         if not os.path.isdir(file_path):
+            if not os.path.exists(file_path):
+                open(file_path, 'w').close()
             self.path = file_path
         else:
             self.path = ''
@@ -53,6 +55,14 @@ class FileName:
         with open(self.path, 'r') as f:
             content = f.readlines(*args)
         return content
+    
+    def write(self, *args):
+        with open(self.path, 'w') as f:
+            f.write(*args)
+    
+    def writelines(self, *args):
+        with open(self.path, 'w') as f:
+            f.writelines(*args)
 
 
 class Folder:
@@ -74,6 +84,9 @@ class Folder:
             
     def __getitem__(self, file_name):
         return self.files[file_name]
+    
+    def createFile(self, file_name):
+        self.files[file_name] = FileName(self.path + file_name)
 
 
 class Save:
@@ -179,6 +192,12 @@ class Save:
                 print "SaveID:", self.name, "file number", x, "could not be read."
         time.sleep(0.5)
         sendChatMessage('-load end', speed=speed)
+        
+    def optimizeData(self, speed, wait_time):
+        self.folder.createFile('data.txt')
+        for x in range(0, self.size):
+            data = self._readData(str(x))
+            self['data.txt'].writelines([x + '\n' for x in data])
 
 
 # =============================================================================
