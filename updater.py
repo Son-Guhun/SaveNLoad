@@ -2,6 +2,7 @@
 from multiprocessing import Process, Manager, freeze_support
 import requests
 import os
+import traceback
 
 # Required for downloading a new version automatically
 from tqdmLite import tqdm
@@ -55,8 +56,16 @@ def getNewestVersionEx():
         p.terminate()
         raise req_error.ConnectionError('Connection did not complete within timeout.')
 
-    check = d['value'].json() 
-    return check
+    
+    try:
+        return d['value'].json()
+    except:
+        print
+        traceback.print_exc()
+        print "\n\nError when attemtping to update. Continuing to main routine."
+    
+    return None
+    
 
 
 def getNewestVersion():
