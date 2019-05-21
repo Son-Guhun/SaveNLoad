@@ -261,13 +261,12 @@ def press(key, speed=1):
         keyUp(key)
         return True
     if key in Combs:
-        keyDown(Base[Combs[key][0]])
-        time.sleep(rest_time)
-        keyDown(Base[Combs[key][1]])
-        time.sleep(rest_time)
-        keyUp(Base[Combs[key][1]])
-        time.sleep(rest_time)
-        keyUp(Base[Combs[key][0]])
+        for k in Combs[key]:
+            keyDown(Base[k])
+            time.sleep(rest_time)
+        for k in reversed(Combs[key]):
+            keyUp(Base[k])
+            time.sleep(rest_time)
         return True
     return False
 
