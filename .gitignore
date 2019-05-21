@@ -3,6 +3,7 @@ SaveNLoad
 Settings
 _Releases
 *.pyc
+*.pyo
 Testing.py
 .updateSnL
 .updateZip
