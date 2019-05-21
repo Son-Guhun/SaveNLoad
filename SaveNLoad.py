@@ -106,7 +106,7 @@ def main(save_name):
             p = handlers.PopenWrapper(handlers.KillPowershell, [], {},
                                       ['powershell', '-windowstyle', 'hidden',
                                        '-ExecutionPolicy', 'ByPass', '-File',
-                                       'ChangeLanguageList.ps1'.encode('ascii')],
+                                       SCRIPT_PATH+'ChangeLanguageList.ps1'],
                                       stdout=subprocess.PIPE, stdin=subprocess.PIPE,
                                       creationflags=CREATE_NO_WINDOW)
             print p.stdout.readline()[:-1]
