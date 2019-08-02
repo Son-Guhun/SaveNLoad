@@ -8,7 +8,14 @@ Created on Fri Mar 30 00:34:46 2018
 from distutils.core import setup
 import py2exe
  
-setup(console=['SaveNLoad.py','autoupdate.py']
+setup(console=['SaveNLoad.py','autoupdate.py'],
+    options = {
+                        'py2exe': {
+                                'bundle_files': 3,
+                                'optimize': 2,
+                                'includes': ['ssl'],
+                        }
+                },
           #,options = {'py2exe': {'bundle_files': 1, 'compressed': True}}
           #,zipfile = None
 #          ,options={

@@ -216,7 +216,16 @@ def sendChatMessage(message, speed):
     write(message, speed)
     press('ENTER')
 
+def pasteChatMessage(speed):
+    press('ENTER')
+    #/speed)
+    press('v',speed)
+    
+    # keyUp(Base['CTRL'])
+    
+    press('ENTER')
 
+import pyperclip
 def typeSaveData(save_data, speed):
     """
     Recieves a list of strings. Sends each string as a chat message in-game.
@@ -224,11 +233,24 @@ def typeSaveData(save_data, speed):
     Returns false if the WC3 window is not in focus while typing.
     Returns true upon successfully finishing the typing routine.
     """
+
+    keybd_event(Base['CTRL'], 0, 0, 0)
+    time.sleep(0.05*128/speed)
+
     for line_data in save_data:
         if getCurWindowText() == "Warcraft III":
-            sendChatMessage(line_data, speed=speed)
+            # sendChatMessage(line_data, speed=speed)
+            pyperclip.copy(line_data)
+            #time.sleep(256*(0.1 + random.random()/10.0) / float(speed))
+            time.sleep(0.05)
+            pasteChatMessage(speed)
         else:
+            time.sleep(0.05*128/speed)#/speed)
+            keybd_event(Base['CTRL'], 0, 2, 0)
             return False
+
+    time.sleep(0.05*128/speed)#/speed)
+    keybd_event(Base['CTRL'], 0, 2, 0)
     return True
 
 

@@ -22,7 +22,6 @@ import platform  # Used to retrieve windows version
 from multiprocessing import freeze_support
 from requests import exceptions as req_error
 
-
 # =============================================================================
 # Import other SaveNLoadModules
 # =============================================================================
@@ -36,16 +35,52 @@ import handlers
 # =============================================================================
 # Define version class
 # =============================================================================
-class version:
-    major = 2
-    minor = 3
-    patch = 1
-    suffix = ''
-    asList = [major, minor, patch]
-    asDict = {'MAJOR': major,
-              'MINOR': minor,
-              'PATCH': patch}
-    asString = 'v' + '.'.join([str(x) for x in asList]) + suffix
+class VersionClass:
+
+    def __init__(self, major, minor, patch, suffix=''):
+        self.major = major
+        self.minor = minor
+        self.patch = patch
+        self.suffix = suffix
+
+    def asList(self):
+        return [self.major, self.minor, self.patch]
+
+    def asDict(self):
+        return {'MAJOR': self.major,
+                'MINOR': self.minor,
+                'PATCH': self.patch}
+
+    def asString(self):
+        result = 'v' + '.'.join([str(x) for x in self.asList()])
+        if self.suffix:
+            return result + "-" + self.suffix
+        return result
+
+    def __lt__(self, other):
+        for i in range(len(self.asList())):
+            if self.asList()[i] != other.asList()[i]:
+                return self.asList()[i] < other.asList()[i]
+        return False
+    
+    def __eq__(self, other):
+        return self.asList() == other.asList()
+
+    def __le__(self, other):
+        return self < other or self == other
+            
+
+def versionFromString(string):
+    string = string[1:]
+    parts = string.split('-')
+    if len(parts) > 1:
+        parts = [int(x) for x in parts[0].split('.')] + [parts[1]]
+    else:
+        parts = [int(x) for x in parts[0].split('.')]
+    return VersionClass(*parts)
+
+
+version = VersionClass(2, 4, 0)
 
 
 # =============================================================================
@@ -147,8 +182,8 @@ if __name__ == '__main__':
             print "...(Press Ctrl+C to cancel)..."
             newestVersion = updater.getNewestVersion()
             if newestVersion:
-                print
-                if newestVersion == version.asString:
+                print 
+                if versionFromString(newestVersion) <= version:
                     print 'SaveNLoad is up-to-date.'
                 else:
                     if AUTO_UPDATES:
@@ -187,7 +222,7 @@ if __name__ == '__main__':
 # ==CHECK WINDOWS VERSION AND CLEAR EXISTING REQUESTS
 # =============================================================================
 #     Print Version
-    print "Save/Load Typing Script", version.asString
+    print "Save/Load Typing Script", version.asString()
     print "By: Guhun"
     
     # Check for Windows 8 or newer

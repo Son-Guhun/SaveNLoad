@@ -3,6 +3,7 @@ from multiprocessing import Process, Manager, freeze_support
 import requests
 import os
 import traceback
+import ssl
 
 # Required for downloading a new version automatically
 from tqdmLite import tqdm
